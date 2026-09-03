@@ -1,5 +1,6 @@
-/admin        /admin-index.html    200
-/pending      /pending.html        200
-/waiting      /waiting.html        200
-/register     /registration        301
-/signup       /registration        301
+/admin            /admin-index.html     200
+/pending          /pending.html         200
+/waiting          /waiting.html         200
+/forgot           /app-forgot.html      200
+/register         /registration         301
+/signup           /registration         301
