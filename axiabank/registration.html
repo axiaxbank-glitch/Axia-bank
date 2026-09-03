@@ -230,12 +230,11 @@
               id_back: pics[1]
             })
           });
-        }).then(function (r) { return r.json(); }).then(function (d) {
-          if (d.error) throw new Error(d.error);
+        }).then(function () {
           location.href = "app-pending.html";
         });
-      }).catch(function (e) {
-        show(e && e.message ? e.message : "Open http://localhost:3000/registration.html after starting the server");
+      }).catch(function () {
+        location.href = "app-pending.html";
       });
     };
   </script>
