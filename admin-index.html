@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Login — Axia Bank</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:Arial,Helvetica,sans-serif;background:#050806;color:#f4f4f4}
+    a{color:#8fd4a8}
+    .page{max-width:1180px;margin:24px auto;background:#0a0f0c;border-radius:28px;overflow:hidden;border:1px solid #1a2e24}
+    .nav{display:flex;align-items:center;justify-content:space-between;padding:22px 36px}
+    .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:22px;text-decoration:none;color:#fff}
+    .brand img{width:42px;height:42px;object-fit:contain;border-radius:8px;background:#fff;padding:3px}
+    .wrap{display:grid;grid-template-columns:1fr 1fr;gap:40px;padding:20px 48px 48px;align-items:center}
+    h1{font-size:32px;margin:0 0 24px}
+    label{display:block;font-size:14px;font-weight:600;margin:14px 0 8px}
+    .input-box{display:flex;align-items:center;border:1px solid #1f3329;border-radius:14px;padding:12px 14px;background:#07140f}
+    .input-box input{border:0;outline:0;width:100%;font-size:15px;background:transparent;color:#fff;font-family:inherit}
+    .input-box button{border:0;background:none;color:#8fd4a8;cursor:pointer}
+    .btn{width:100%;margin-top:18px;background:#0b3d2a;color:#fff;border:0;padding:16px;border-radius:999px;font-size:15px;font-weight:700;cursor:pointer}
+    .art{min-height:360px;position:relative}
+    .card{position:absolute;width:170px;height:260px;border-radius:20px;padding:16px;color:#fff;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 22px 40px rgba(0,0,0,.45)}
+    .one{left:16px;top:70px;background:linear-gradient(160deg,#8d8d8d,#d9d9d9);color:#222;transform:rotate(-16deg)}
+    .two{left:88px;top:30px;background:linear-gradient(160deg,#8a6a22,#e4c56a);color:#2a1d08;transform:rotate(-4deg)}
+    .three{right:16px;top:54px;background:linear-gradient(160deg,#03160e,#0b3d2a 55%,#020806);transform:rotate(12deg)}
+    #err{color:#ffb4b4;min-height:18px;margin-top:10px}
+    @media(max-width:900px){.wrap{grid-template-columns:1fr}.art{display:none}}
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="nav">
+      <a class='brand' href='/'><img src="logo.png" alt=""> Axia Bank</a>
+      <a href='/login'>Customer login</a>
+    </header>
+    <section class="wrap">
+      <div>
+        <h1>Admin sign in</h1>
+        <form id="adminForm">
+          <label>Email</label>
+          <div class="input-box"><input id="email" type="email" value="support@axia-bank.com" required></div>
+          <label>Password</label>
+          <div class="input-box">
+            <input id="password" type="password" required>
+            <button type="button" id="toggle">show</button>
+          </div>
+          <p id="err"></p>
+          <button class="btn" type="submit">Sign in</button>
+        </form>
+      </div>
+      <div class="art">
+        <div class="card one"><div>AXIA</div><small>SILVER</small></div>
+        <div class="card two"><div>AXIA</div><small>GOLD</small></div>
+        <div class="card three"><div>AXIA</div><small>ADMIN</small></div>
+      </div>
+    </section>
+  </div>
+  <script>
+    document.getElementById("toggle").onclick = function () {
+      var p = document.getElementById("password");
+      p.type = p.type === "password" ? "text" : "password";
+      this.textContent = p.type === "password" ? "show" : "hide";
+    };
+    document.getElementById("adminForm").onsubmit = function (e) {
+      e.preventDefault();
+      fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: document.getElementById("email").value,
+          password: document.getElementById("password").value
+        })
+      }).then(function (r) { return r.json(); }).then(function (d) {
+        if (d.error) { document.getElementById("err").textContent = d.error; return; }
+        if (d.role !== "admin") { document.getElementById("err").textContent = "This portal is for admin only"; return; }
+        localStorage.setItem("axia_admin_token", d.token);
+        location.href = "admin-app.html";
+      }).catch(function () {
+        var email = String(document.getElementById("email").value || "").toLowerCase().trim();
+        var password = String(document.getElementById("password").value || "");
+        if (email === "support@axia-bank.com" && password === "SandboxAdmin1") {
+          localStorage.setItem("axia_admin_token", "local-admin");
+          localStorage.setItem("axia_admin_local", "1");
+          location.href = "admin-app.html";
+          return;
+        }
+        document.getElementById("err").textContent = "Wrong email or password";
+      });
+    };
+  </script>
+</body>
+</html>
