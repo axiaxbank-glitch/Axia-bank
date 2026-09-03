@@ -37,7 +37,8 @@ async function loadDb() {
     deposits: [],
     withdrawals: [],
     cards: [],
-    notes: []
+    notes: [],
+    chats: {}
   };
 }
 
@@ -163,7 +164,10 @@ async function readBody(req) {
 
 export default async (req) => {
   const url = new URL(req.url);
-  const path = url.pathname.replace(/\/+$/, "") || "/";
+  let path = url.pathname.replace(/\/+$/, "") || "/";
+  if (path.startsWith("/.netlify/functions/api")) {
+    path = "/api" + path.slice("/.netlify/functions/api".length);
+  }
   const method = req.method.toUpperCase();
 
   let db;
@@ -193,6 +197,61 @@ export default async (req) => {
 
   if (path === "/api/auth/logout" && method === "POST") {
     return json({ ok: true });
+  }
+
+  if (path === "/api/auth/register" && method === "POST") {
+    const body = await readBody(req);
+    const email = String(body.email || "").toLowerCase().trim();
+    const username = String(body.username || email.split("@")[0]).trim();
+    const password = String(body.password || "");
+    if (!email || !password) return json({ error: "Email and password required" }, 400);
+    if (db.users.some((u) => u.email === email || u.username === username)) {
+      return json({ error: "That email or username is already used" }, 400);
+    }
+    const id = db.nextId++;
+    const user = makeUser({
+      id,
+      email,
+      username,
+      password,
+      role: "customer",
+      first_name: body.first_name || "",
+      last_name: body.last_name || "",
+      name: `${body.first_name || ""} ${body.last_name || ""}`.trim() || username,
+      phone: body.phone || "",
+      address: body.address || "",
+      country: body.country || "",
+      status: "pending"
+    });
+    user.state = body.state || "";
+    user.city = body.city || "";
+    user.postal_code = body.postal_code || "";
+    user.account_type = body.account_type || "";
+    user.dob = body.dob || "";
+    user.profile_pic = body.profile_pic || "";
+    db.users.push(user);
+    db.customers.push(user);
+    await saveDb(db);
+    return json({
+      ok: true,
+      apply_token: signToken(user),
+      id: user.id
+    });
+  }
+
+  if (path === "/api/auth/kyc" && method === "POST") {
+    const body = await readBody(req);
+    const auth = readToken(body.apply_token ? "Bearer " + body.apply_token : req.headers.get("authorization"));
+    if (!auth) return json({ error: "Start registration first" }, 401);
+    const user = db.users.find((u) => Number(u.id) === Number(auth.id));
+    if (!user) return json({ error: "Account not found" }, 404);
+    const ssn = String(body.ssn || "").replace(/\D/g, "");
+    user.ssn_last4 = ssn.slice(-4);
+    user.id_front = body.id_front ? "uploaded" : "";
+    user.id_back = body.id_back ? "uploaded" : "";
+    user.status = "pending";
+    await saveDb(db);
+    return json({ ok: true, status: user.status });
   }
 
   if (path === "/api/me" && method === "GET") {
@@ -289,7 +348,7 @@ export default async (req) => {
       holder_name: body.holder_name || customer.name,
       counterparty_account: body.account_number || customer.account_number,
       set_time: body.set_time || "",
-      created_at: new Date().toISOString()
+      created_at: new Date().toLocaleString && new Date().toISOString()
     });
     await saveDb(db);
     return json({
@@ -402,6 +461,79 @@ export default async (req) => {
     const gate = requireAdmin(req, db);
     if (gate.error) return gate.error;
     return json({ cards: db.cards });
+  }
+
+  const action = path.match(/^\/api\/admin\/(deposits|withdrawals|cards)\/(\d+)\/(approve|decline)$/) ||
+    path.match(/^\/api\/admin\/(deposits|withdrawals|cards)$/);
+  if (method === "POST" && path.startsWith("/api/admin/")) {
+    const gate = requireAdmin(req, db);
+    if (gate.error) return gate.error;
+    const body = await readBody(req);
+    const kind = body.kind || (path.includes("deposit") ? "deposits" : path.includes("withdraw") ? "withdrawals" : path.includes("card") ? "cards" : "");
+    const id = body.id;
+    const act = body.action;
+    const bucket = kind === "deposits" ? db.deposits : kind === "withdrawals" ? db.withdrawals : kind === "cards" ? db.cards : null;
+    if (bucket && id) {
+      const row = bucket.find((r) => Number(r.id) === Number(id));
+      if (row) {
+        row.status = act === "approve" ? "approved" : "declined";
+        await saveDb(db);
+        return json({ ok: true, status: row.status });
+      }
+    }
+  }
+
+  if (!db.chats) db.chats = {};
+
+  if (path === "/api/chat" && method === "POST") {
+    const body = await readBody(req);
+    const auth = readToken(req.headers.get("authorization") || (body.token ? "Bearer " + body.token : ""));
+    const user = auth ? db.users.find((u) => Number(u.id) === Number(auth.id)) : null;
+    if (!user) return json({ error: "Sign in first" }, 401);
+
+    const role = user.role === "admin" ? "admin" : "user";
+    const from = role === "admin" ? "admin" : (user.email || user.username || "customer");
+    let threadId = String(body.threadId || "").toLowerCase().trim();
+    if (role !== "admin") threadId = String(user.email || user.username || from).toLowerCase();
+    if (!db.chats[threadId]) db.chats[threadId] = { messages: [], typing: {} };
+
+    if (body.type === "join" || body.type === "open" || body.type === "seen" || body.type === "poll") {
+      const threads = Object.keys(db.chats).map((id) => {
+        const msgs = db.chats[id].messages || [];
+        return { id, last: msgs[msgs.length - 1] || null };
+      });
+      return json({
+        ok: true,
+        type: "snapshot",
+        threadId,
+        threads,
+        messages: (db.chats[threadId] && db.chats[threadId].messages) || [],
+        typing: (db.chats[threadId] && db.chats[threadId].typing) || {}
+      });
+    }
+
+    if (body.type === "typing") {
+      if (!threadId) return json({ error: "No chat selected" }, 400);
+      db.chats[threadId].typing[from] = !!body.on;
+      await saveDb(db);
+      return json({ ok: true });
+    }
+
+    if (body.type === "chat") {
+      if (!threadId) return json({ error: "No chat selected" }, 400);
+      const message = {
+        from,
+        text: String(body.text || (body.image ? "Photo" : "")),
+        image: body.image || "",
+        created_at: new Date().toISOString()
+      };
+      db.chats[threadId].messages.push(message);
+      db.chats[threadId].typing[from] = false;
+      await saveDb(db);
+      return json({ ok: true, type: "message", threadId, message });
+    }
+
+    return json({ error: "Unknown chat action" }, 400);
   }
 
   return json({ error: "Not found", path }, 404);
