@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Axia Login</title>
+  <link rel="stylesheet" href="css/axia-neo.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand"><img src="logo.png" alt="">AXIA BANK</div>
+    <nav><a href="index.html">Home</a><a href="app-register.html">Create account</a></nav>
+  </header>
+  <div class="wrap">
+    <div class="form-col">
+      <h1>Login</h1>
+      <p class="sub">Sign in with your email or username, then your password. Next you will enter your PIN.</p>
+      <form id="f">
+        <label>Email or username</label>
+        <input id="email" type="text" autocomplete="username" required>
+        <label>Password</label>
+        <input id="password" type="password" required>
+        <p class="err" id="err"></p>
+        <button class="btn" type="submit">Continue to PIN</button>
+      </form>
+      <p class="note" style="margin-top:14px"><a href="app-forgot.html">Forgot password</a></p>
+    </div>
+    <div class="art"><div class="art-card"><b>Welcome back</b><p>Password first. PIN second.</p></div></div>
+  </div>
+  <script>
+    document.getElementById("f").onsubmit = function (e) {
+      e.preventDefault();
+      fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: document.getElementById("email").value, password: document.getElementById("password").value })
+      }).then(function (r) { return r.json(); }).then(function (d) {
+        if (d.error) {
+          document.getElementById("err").textContent = d.error;
+          if (d.error.indexOf("waiting") !== -1) setTimeout(function(){ location.href = "app-pending.html"; }, 800);
+          return;
+        }
+        if (d.role === "admin") { localStorage.setItem("axia_admin_token", d.token); location.href = "admin-app.html"; return; }
+        localStorage.setItem("axia_pre_token", d.pre_token);
+        localStorage.setItem("axia_pin_user", JSON.stringify(d.customer || {}));
+        location.href = "app-pin.html";
+      }).catch(function () { document.getElementById("err").textContent = "Start the Axia server first"; });
+    };
+  </script>
+</body>
+</html>

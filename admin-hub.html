@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard — Axia Bank</title>
+  <style>
+    :root{--brown:#3b2a22;--cream:#f6f1ea;--line:#e7ddd3;--text:#2b211c}
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:Arial,Helvetica,sans-serif;background:var(--cream);color:var(--text)}
+    .layout{display:grid;grid-template-columns:230px 1fr 320px;min-height:100vh}
+    aside{background:var(--brown);color:#fff;padding:18px 0}
+    aside h1{font-size:16px;padding:0 16px 16px}
+    aside a,aside button.nav{display:block;width:100%;text-align:left;background:none;border:0;color:#fff;padding:12px 16px;text-decoration:none;cursor:pointer;font-size:14px}
+    .nav.on,aside a:hover,aside button.nav:hover{background:#5a4033}
+    header{background:#fff;border-bottom:1px solid var(--line);padding:14px 18px;display:flex;justify-content:space-between}
+    main{padding:18px}
+    .stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+    .stat{background:#fff;border:1px solid var(--line);padding:12px 14px;min-width:120px}
+    .stat b{display:block;font-size:20px;margin-top:4px}
+    .card{background:#fff;border:1px solid var(--line);padding:14px;margin-bottom:14px}
+    table{width:100%;border-collapse:collapse;font-size:14px}
+    th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left}
+    button.act{background:var(--brown);color:#fff;border:0;padding:6px 10px;cursor:pointer;margin-right:6px}
+    button.light{background:#fff;color:var(--brown);border:1px solid var(--line)}
+    .user{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);cursor:pointer}
+    img,.ph{width:40px;height:40px;border-radius:50%;object-fit:cover;background:var(--brown);color:#fff;display:flex;align-items:center;justify-content:center}
+    .right{background:#fff;border-left:1px solid var(--line);display:flex;flex-direction:column}
+    .right h3{padding:14px;border-bottom:1px solid var(--line)}
+    #chatLog{flex:1;overflow:auto;padding:12px;background:var(--cream)}
+    .bubble{max-width:80%;padding:8px 10px;margin:6px 0;font-size:13px}
+    .me{background:var(--brown);color:#fff;margin-left:auto}
+    .them{background:#fff;border:1px solid var(--line)}
+    .chat-form{display:flex;gap:6px;padding:10px;border-top:1px solid var(--line)}
+    .chat-form input{flex:1;padding:8px;border:1px solid var(--line)}
+    .chat-form button{background:var(--brown);color:#fff;border:0;padding:8px 12px}
+    .view{display:none}.view.on{display:block}
+    @media(max-width:900px){.layout{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside>
+      <h1>Axia Admin</h1>
+      <button class="nav on" data-view="overview">Overview</button>
+      <button class="nav" data-view="users">All users</button>
+      <button class="nav" data-view="pending">Pending requests</button>
+      <button class="nav" data-view="messages">Messages</button>
+      <a href="login.html">Sign out</a>
+    </aside>
+    <section>
+      <header>
+        <div>Admin dashboard</div>
+        <div id="status">Connecting chat...</div>
+      </header>
+      <main>
+        <div class="stats">
+          <div class="stat">Users<b id="cUsers">0</b></div>
+          <div class="stat">Pending<b id="cPend">0</b></div>
+          <div class="stat">Approved<b id="cOk">0</b></div>
+          <div class="stat">Chats<b id="cChat">0</b></div>
+        </div>
+        <div class="view on" id="view-overview">
+          <div class="card"><h3>Latest users</h3><div id="overviewUsers">Loading...</div></div>
+          <div class="card"><h3>Latest pending requests</h3><div id="overviewTx"></div></div>
+        </div>
+        <div class="view" id="view-users">
+          <div class="card"><h3>Every registered user</h3><p>Click a user to open private chat.</p><div id="allUsers"></div></div>
+        </div>
+        <div class="view" id="view-pending">
+          <div class="card"><h3>Approve or decline</h3>
+            <table><thead><tr><th>User</th><th>Type</th><th>Amount</th><th>Action</th></tr></thead><tbody id="txBody"></tbody></table>
+          </div>
+        </div>
+        <div class="view" id="view-messages">
+          <div class="card"><h3>All student chats</h3><div id="threadList">No messages yet</div></div>
+        </div>
+      </main>
+    </section>
+    <aside class="right">
+      <h3 id="chatTitle">Private chat</h3>
+      <div id="chatLog"><div class="bubble them">Select a user to chat privately.</div></div>
+      <form class="chat-form" id="chatForm">
+        <input id="chatInput" placeholder="Reply to this user only">
+        <button type="submit">Send</button>
+      </form>
+    </aside>
+  </div>
+  <script>
+    var ws=null, current=null, threads=[];
+    function money(n){ return "$"+Number(n||0).toLocaleString(); }
+    document.querySelectorAll("button.nav").forEach(function(b){
+      b.onclick=function(){
+        document.querySelectorAll("button.nav").forEach(function(x){x.classList.remove("on");});
+        document.querySelectorAll(".view").forEach(function(v){v.classList.remove("on");});
+        b.classList.add("on");
+        document.getElementById("view-"+b.getAttribute("data-view")).classList.add("on");
+      };
+    });
+    function row(u){
+      var photo=u.profilePic?"<img src='"+u.profilePic+"'>":"<div class='ph'>"+((u.username||"U")[0]||"U").toUpperCase()+"</div>";
+      return "<div class='user' data-email='"+(u.email||"")+"'>"+photo+"<div><b>"+(u.firstName||"")+" "+(u.lastName||"")+"</b><br>@"+(u.username||"")+" · "+(u.email||"")+"</div></div>";
+    }
+    function bindUsers(){
+      document.querySelectorAll(".user[data-email]").forEach(function(el){
+        el.onclick=function(){ openChat(el.getAttribute("data-email")); };
+      });
+    }
+    function renderUsers(users){
+      document.getElementById("overviewUsers").innerHTML=users.slice(0,6).map(row).join("")||"No users yet";
+      document.getElementById("allUsers").innerHTML=users.map(row).join("")||"No users yet";
+      document.getElementById("cUsers").textContent=users.length;
+      bindUsers();
+    }
+    function renderTx(txs){
+      var pending=txs.filter(function(t){return t.status==="Pending";});
+      document.getElementById("cPend").textContent=pending.length;
+      document.getElementById("cOk").textContent=txs.filter(function(t){return t.status==="Approved";}).length;
+      var html=pending.map(function(t){
+        return "<tr><td>"+(t.name||t.email)+"</td><td>"+t.type+"</td><td>"+money(t.amount)+"</td><td>"+
+          "<button class='act' onclick=\"decide('"+t.id+"','Approved')\">Approve</button>"+
+          "<button class='act light' onclick=\"decide('"+t.id+"','Declined')\">Decline</button></td></tr>";
+      }).join("")||"<tr><td colspan='4'>No pending requests</td></tr>";
+      document.getElementById("txBody").innerHTML=html;
+      document.getElementById("overviewTx").innerHTML="<table>"+html+"</table>";
+    }
+    function loadData(){
+      Promise.all([fetch("/api/users").then(function(r){return r.json();}), fetch("/api/transactions").then(function(r){return r.json();})])
+      .then(function(res){ renderUsers(res[0].users||[]); renderTx(res[1].transactions||[]); })
+      .catch(function(){ document.getElementById("overviewUsers").textContent="Use http://localhost:3000/admin-hub.html"; });
+    }
+    function decide(id,status){
+      fetch("/api/transactions/decide",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:id,status:status})}).then(loadData);
+    }
+    function addBubble(m){
+      var d=document.createElement("div");
+      d.className="bubble "+(m.from==="admin"?"me":"them");
+      d.textContent=(m.name||m.from)+": "+m.text;
+      document.getElementById("chatLog").appendChild(d);
+      document.getElementById("chatLog").scrollTop=99999;
+    }
+    function renderThreads(){
+      document.getElementById("cChat").textContent=threads.length;
+      document.getElementById("threadList").innerHTML=threads.map(function(t){
+        return "<div class='user' onclick=\"openChat('"+t.id+"')\"><div><b>"+t.id+"</b><br>"+(t.last?t.last.text:"No text")+"</div></div>";
+      }).join("")||"No messages yet";
+    }
+    function openChat(id){
+      if(!id||!ws||ws.readyState!==1) return;
+      current=id;
+      document.getElementById("chatTitle").textContent="Chat with "+id;
+      document.getElementById("chatLog").innerHTML="";
+      ws.send(JSON.stringify({type:"open",threadId:id}));
+    }
+    function connect(){
+      ws=new WebSocket((location.protocol==="https:"?"wss://":"ws://")+location.host+"/chat");
+      ws.onopen=function(){ document.getElementById("status").textContent="Chat Live"; ws.send(JSON.stringify({type:"join",role:"admin",name:"Axia Admin"})); };
+      ws.onclose=function(){ document.getElementById("status").textContent="Chat Offline"; setTimeout(connect,1500); };
+      ws.onmessage=function(ev){
+        var data=JSON.parse(ev.data);
+        if(data.type==="threads"){ threads=data.threads||[]; renderThreads(); }
+        if(data.type==="history"){ current=data.threadId; document.getElementById("chatLog").innerHTML=""; (data.messages||[]).forEach(addBubble); }
+        if(data.type==="message"&&data.threadId===current) addBubble(data.message);
+      };
+    }
+    document.getElementById("chatForm").onsubmit=function(e){
+      e.preventDefault();
+      var text=document.getElementById("chatInput").value.trim();
+      if(!text||!current||!ws||ws.readyState!==1) return;
+      ws.send(JSON.stringify({type:"chat",threadId:current,text:text}));
+      document.getElementById("chatInput").value="";
+    };
+    loadData();
+    connect();
+  </script>
+</body>
+</html>

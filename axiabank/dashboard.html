@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Axia Bank – Dashboard</title>
+  <style>
+    :root{--brown:#0b3d2a;--ink:#050806;--muted:#6b736e;--side:#07140f;--line:#1a2e24;--cream:#ffffff;--green:#0b3d2a;--red:#b42318}
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:Georgia,"Times New Roman",serif;background:#050806;color:#f4f4f4}
+    .shell{min-height:100vh}
+    .topbar{background:#07140f;border-bottom:1px solid #1a2e24;padding:10px 18px 8px}
+    .top-row{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+    .side-foot{margin-left:auto}
+    .logo{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.08em;color:#ffffff;font-size:13px}
+    .logo img{width:42px;height:42px;object-fit:contain;background:#fff;border-radius:8px;padding:3px}
+    .dots{border:0;background:#0b3d2a;color:#8fd4a8;padding:6px 10px;border-radius:10px;cursor:pointer;font:inherit;margin-top:8px;line-height:1;display:flex;flex-direction:column;gap:3px;align-items:center;justify-content:center;min-width:36px;min-height:36px}
+    .dots span{width:4px;height:4px;background:#8fd4a8;border-radius:50%;display:block}
+    .menu{display:none;flex-wrap:wrap;gap:6px;padding:8px 0 2px}
+    .menu.open{display:grid;grid-template-columns:1fr 1fr;gap:6px;max-width:520px}
+    #menuDots.hide{display:none}
+    .nav{border:0;background:transparent;color:#d7e4dc;padding:8px 12px;border-radius:999px;cursor:pointer;font:inherit;font-size:13px}
+    .nav.on{background:#0b3d2a;color:#ffffff;font-weight:700}
+    .side-foot{display:flex;gap:10px;align-items:center}
+    .avatar,.ph{width:36px;height:36px;border-radius:50%;background:var(--brown);color:#fff;display:flex;align-items:center;justify-content:center;object-fit:cover}
+    .side-foot small{display:block;color:#9aa79f;font-size:11px}
+    .main{padding:28px 34px 90px;background:#0a0f0c;color:#f4f4f4}
+    .head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px}
+    .head h1{font-size:28px;font-weight:600}
+    .head p{color:var(--muted);margin-top:4px;font-size:14px}
+    .tools{display:flex;align-items:center;gap:12px}
+    .tools input{border:1px solid var(--line);background:#fff;border-radius:20px;padding:8px 14px;width:180px;font:inherit}
+    .bell{width:36px;height:36px;border:1px solid var(--line);border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer}
+    .balances{display:flex;justify-content:space-between;gap:20px;background:linear-gradient(135deg,#03160e,#0a2a1c 55%,#020806);border:1px solid #163526;border-radius:14px;padding:18px 22px;margin-bottom:22px;align-items:flex-end;color:#fff}
+    .balances span{display:block;color:#cfe0d6;font-size:13px;margin-bottom:6px}
+    .balances b{font-size:32px;font-weight:600}
+    .eye{border:0;background:none;cursor:pointer;font-size:16px}
+    .recent-box{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin:0 0 22px;background:#111a15;border:1px solid #1f3329;border-radius:14px;padding:16px 18px}
+    .recent-box h3{font-size:16px;margin-bottom:10px}
+    .recent-item{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #1f3329;font-size:14px}
+    .recent-item:last-child{border-bottom:0}
+    .see-more{background:transparent;border:0;color:#8fd4a8;cursor:pointer;font:inherit;white-space:nowrap}
+    .tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .tile{background:#111a15;border:1px solid #1f3329;border-radius:10px;padding:8px 8px;text-align:center;cursor:pointer;min-height:64px;color:#fff}
+    .tile:hover{box-shadow:0 8px 20px rgba(80,50,20,.06)}
+    .ico{color:#8fd4a8;font-size:16px;margin-bottom:6px}
+    .tile b{display:block;margin-bottom:4px;font-size:14px}
+    .tile p{color:#9aa79f;font-size:11px}
+    .view{display:none}.view.active{display:block}
+    .panel-title{font-size:22px;margin-bottom:8px}
+    .muted{color:var(--muted);margin-bottom:16px;font-size:14px}
+    .btn{background:#0b3d2a;color:#fff;border:0;padding:10px 14px;cursor:pointer;border-radius:8px;font:inherit;margin:2px}
+    .btn.light{background:#fff;color:#0b3d2a;border:1px solid var(--line)}
+    table{width:100%;border-collapse:collapse;background:#111a15;border-radius:12px;overflow:hidden;color:#f4f4f4}
+    th{text-align:left;background:#0b3d2a;color:#d7e4dc;font-size:13px;padding:11px 8px}
+    td{padding:12px 8px;border-bottom:1px solid var(--line);font-size:14px}
+    .green{color:var(--green);font-weight:700;text-align:right}
+    .red{color:var(--red);font-weight:700;text-align:right}
+    .card{border:1px solid #1f3329;padding:12px;margin:8px 0;background:#111a15;border-radius:12px}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    input,select,textarea{width:100%;padding:10px;border:1px solid var(--line);margin-top:6px;font:inherit;border-radius:8px}
+    label{font-size:13px;color:var(--muted)}
+    .tier{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .plastic{height:130px;border-radius:12px;padding:12px;color:#fff;display:flex;flex-direction:column;justify-content:space-between}
+    .plastic.silver{background:linear-gradient(135deg,#8d8d8d,#d9d9d9);color:#222}
+    .plastic.gold{background:linear-gradient(135deg,#8a6a22,#e4c56a)}
+    .plastic.platinum{background:linear-gradient(135deg,#4b5563,#cfd8e3);color:#111}
+    .plastic.black{background:linear-gradient(135deg,#111,#444)}
+    .plastic.business{background:linear-gradient(135deg,#3b2a22,#8a6a55)}
+    .num{letter-spacing:3px;font-size:18px}
+    .chat-btn{position:fixed;right:20px;bottom:20px;z-index:50;width:56px;height:56px;border-radius:50%;border:0;cursor:pointer;background:#0b3d2a;color:#fff;font-size:13px}
+    .chat-box{position:fixed;right:20px;bottom:86px;width:320px;height:420px;background:#0a0f0c;border:1px solid #1f3329;z-index:50;display:none;flex-direction:column;border-radius:12px;overflow:hidden;color:#fff}
+    .chat-box.open{display:flex}
+    .chat-head{background:#0b3d2a;color:#fff;padding:12px 14px;display:flex;justify-content:space-between}
+    .chat-log{flex:1;overflow:auto;padding:12px;background:var(--cream)}
+    .bubble{max-width:80%;padding:8px 10px;margin:6px 0;font-size:13px;border-radius:8px}
+    .bubble.me{background:#0b3d2a;color:#fff;margin-left:auto}
+    .bubble.them{background:#111a15;border:1px solid #1f3329;color:#fff}
+    .chat-form{display:flex;gap:6px;padding:10px;align-items:center;background:#0a0f0c}
+    .chat-form button{background:#0b3d2a;color:#fff;border:0;border-radius:8px;padding:8px 10px;cursor:pointer}
+    #chatTyping{min-height:18px;color:#8fd4a8;font-style:italic;padding:0 10px;font-size:12px}
+    #dormantTag{color:#8a2b2b;font-size:12px;margin-top:6px}
+    .profile-pop{display:none;position:fixed;top:24px;right:28px;width:280px;background:#fff;border:1px solid var(--line);border-radius:16px;z-index:60;box-shadow:0 12px 30px rgba(80,50,20,.12);padding:18px;text-align:center}
+    .profile-pop.on{display:block}
+    .profile-pop img,.profile-pop .bigph{width:72px;height:72px;border-radius:50%;object-fit:cover;margin:0 auto 10px;background:var(--brown);color:#fff;display:flex;align-items:center;justify-content:center;font-size:24px}
+    .profile-pop b{display:block;margin-bottom:4px}
+    .profile-pop p{color:var(--muted);font-size:13px;margin:4px 0;text-align:left}
+    .avatar,.ph{cursor:pointer}
+    @media(max-width:1000px){.balances b{font-size:22px}.menu.open{max-width:100%}}
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="top-row">
+        <div>
+          <div class="logo"><img src="logo.png" alt="Axia Bank" onerror="this.style.display='none'"><span>AXIA BANK</span></div>
+          <button type="button" class="dots" id="menuDots" title="Menu"><span></span><span></span><span></span></button>
+        </div>
+        <div class="side-foot">
+          <img id="sidePhoto" class="avatar" alt="" style="display:none">
+          <div class="ph" id="sideInitial">A</div>
+          <div><div id="sideName">Customer</div><small>Personal Banking</small></div>
+        </div>
+      </div>
+      <nav class="menu">
+        <button class="nav on" data-view="dash">Dashboard</button>
+        <button class="nav" data-view="accounts">Accounts</button>
+        <button class="nav" data-view="transfer">Transfers</button>
+        <button class="nav" data-view="deposit">Deposit</button>
+        <button class="nav" data-view="withdraw">Withdraw</button>
+        <button class="nav" data-view="bills">Payments</button>
+        <button class="nav" data-view="cards">Cards</button>
+        <button class="nav" data-view="loans">Loans</button>
+        <button class="nav" data-view="wealth">Wealth</button>
+        <button class="nav" data-view="tx">Activity</button>
+        <button class="nav" data-view="statements">Statements</button>
+        <button class="nav" data-view="notes">Alerts</button>
+        <button class="nav" data-view="help">Support</button>
+        <button class="nav" data-view="profile">Settings</button>
+        <a class="nav" href="login.html" id="logoutLink" style="text-decoration:none">Sign out</a>
+      </nav>
+    </header>
+    <main class="main">
+      <div class="view active" id="view-dash">
+        <div class="head">
+          <div>
+            <h1 id="hello">Good morning</h1>
+            <p>Here's what's happening with your accounts today.</p>
+          </div>
+          <div class="tools">
+            <input id="dashSearch" placeholder="Search">
+            <div class="bell" data-view="notes">●</div>
+            <img id="dashPhoto" class="avatar" alt="" style="display:none">
+            <div class="ph" id="dashInitial">A</div>
+          </div>
+        </div>
+        <div class="balances">
+          <div>
+            <span>Total Balance <button class="eye" id="eyeBtn" type="button">◉</button></span>
+            <b id="totalBal">$0.00</b>
+            <div id="dormantTag" style="display:none">DORMANT</div>
+          </div>
+          <div style="text-align:right">
+            <span>Available Balance</span>
+            <b id="availBal">$0.00</b>
+          </div>
+        </div>
+        <div class="recent-box">
+          <div style="flex:1">
+            <h3>Recent activity</h3>
+            <div id="homeRecent"><div class="recent-item">No recent activity</div></div>
+          </div>
+          <button type="button" class="see-more" data-view="tx">See more</button>
+        </div>
+        <div class="tiles">
+          <div class="tile" data-view="accounts"><div class="ico">▣</div><b>My Accounts</b><p>View and manage your accounts</p></div>
+          <div class="tile" data-view="transfer"><div class="ico">✈️</div><b>Transfer Money</b><p>Send money to accounts or people</p></div>
+          <div class="tile" data-view="withdraw"><div class="ico">$</div><b>Withdraw Funds</b><p>Withdraw cash to your linked account</p></div>
+          <div class="tile" data-view="deposit"><div class="ico">+</div><b>Deposit</b><p>Deposit funds to your account</p></div>
+          <div class="tile" data-view="bills"><div class="ico">🧾</div><b>Pay Bills</b><p>Pay bills and manage payees</p></div>
+          <div class="tile" data-view="cards"><div class="ico">▭</div><b>Manage Cards</b><p>View and manage your cards</p></div>
+          <div class="tile" data-view="loans"><div class="ico">🤝</div><b>Loans</b><p>Check loan details and payments</p></div>
+          <div class="tile" data-view="wealth"><div class="ico">↗️</div><b>Investments</b><p>Grow your wealth and track performance</p></div>
+          <div class="tile" data-view="tx"><div class="ico">◷</div><b>Transaction History</b><p>View past transactions</p></div>
+          <div class="tile" data-view="statements"><div class="ico">▤</div><b>Statements</b><p>Download account statements</p></div>
+          <div class="tile" data-view="help"><div class="ico">☎</div><b>Support</b><p>Get help from our support team</p></div>
+          <div class="tile" data-view="profile"><div class="ico">⚙</div><b>Settings</b><p>Manage your preferences</p></div>
+        </div>
+      </div>
+
+      <div class="view" id="view-accounts">
+        <h2 class="panel-title">My Accounts</h2>
+        <p class="muted" id="acctSub">Account numbers load after PIN login.</p>
+        <div class="card"><b>Checking</b><p id="checkBal">$0.00</p><small id="checkMeta"></small></div>
+        <div class="card"><b>Savings</b><p id="saveBal">$0.00</p><small id="saveMeta"></small></div>
+      </div>
+
+      <div class="view" id="view-transfer">
+        <h2 class="panel-title">Transfer Money</h2>
+        <p class="muted">Internal move stays in your Axia accounts. External send waits for admin review.</p>
+        <div class="row">
+          <label>From<select id="fromAcct"><option>Checking</option><option>Savings</option></select></label>
+          <label>To<select id="toAcct"><option>Savings</option><option>Checking</option><option>External bank</option></select></label>
+        </div>
+        <label>Amount<input id="trAmount" type="number" min="1" step="0.01"></label><br><br>
+        <label>Memo<input id="trNote" placeholder="Optional note"></label><br><br>
+        <button class="btn" onclick="makeTx('Transfer','trAmount')">Send transfer</button>
+      </div>
+
+      <div class="view" id="view-recipients">
+        <h2 class="panel-title">Saved payees</h2>
+        <label>Name<input id="recName"></label><br><br>
+        <label>Account number<input id="recAcct"></label><br><br>
+        <button class="btn" onclick="saveRecipient()">Save payee</button>
+        <div id="recList"></div>
+      </div>
+
+      <div class="view" id="view-bills">
+        <h2 class="panel-title">Pay Bills</h2>
+        <p class="muted">Bill payments are sent to admin as a withdrawal request.</p>
+        <label>Payee<input id="billName" placeholder="Electric, rent, phone"></label><br><br>
+        <label>Amount<input id="billAmount" type="number" min="1" step="0.01"></label><br><br>
+        <button class="btn" onclick="payBill()">Pay bill</button>
+        <button class="btn light" data-view="recipients">Manage payees</button>
+      </div>
+
+      <div class="view" id="view-deposit">
+        <h2 class="panel-title">Deposit</h2>
+        <p class="muted">Admin reviews the request before your balance updates.</p>
+        <label>Method<select id="depMethod"><option>Bank transfer</option><option>Check</option><option>Cash</option></select></label><br><br>
+        <label>Amount<input id="depAmount" type="number" min="1" step="0.01"></label><br><br>
+        <button class="btn" onclick="makeTx('Deposit','depAmount')">Submit deposit</button>
+      </div>
+
+      <div class="view" id="view-withdraw">
+        <h2 class="panel-title">Withdraw Funds</h2>
+        <p class="muted">Uses available checking. Admin must approve.</p>
+        <label>Amount<input id="wdAmount" type="number" min="1" step="0.01"></label><br><br>
+        <button class="btn" onclick="makeTx('Withdrawal','wdAmount')">Submit withdrawal</button>
+      </div>
+
+      <div class="view" id="view-tx">
+        <h2 class="panel-title">Activity</h2>
+        <input id="txSearch" placeholder="Search" oninput="renderTx()">
+        <p class="muted" id="txCount"></p>
+        <table><thead><tr><th>Date</th><th>Type</th><th>Description</th><th style="text-align:right">Amount</th></tr></thead><tbody id="allBody"></tbody></table>
+        <h3 style="margin:18px 0 8px">Pending requests</h3>
+        <table><thead><tr><th>Date</th><th>Type</th><th>Status</th><th style="text-align:right">Amount</th></tr></thead><tbody id="pendBody"></tbody></table>
+      </div>
+      <div class="view" id="view-pending">
+        <h2 class="panel-title">Pending requests</h2>
+        <p class="muted">Open Activity to see the same list.</p>
+        <div id="pendingNote" class="card">Waiting on admin.</div>
+      </div>
+
+      <div class="view" id="view-cards">
+        <h2 class="panel-title">Manage Cards</h2>
+        <p class="muted">Apply here. Details stay hidden until admin approves.</p>
+        <div class="tier">
+          <div class="plastic silver"><b>Silver</b><span>$4.99 / month</span><button class="btn" onclick="applyCard('silver')">Apply</button></div>
+          <div class="plastic gold"><b>Gold</b><span>$12.99 / month</span><button class="btn" onclick="applyCard('gold')">Apply</button></div>
+          <div class="plastic platinum"><b>Platinum</b><span>$24.99 / month</span><button class="btn" onclick="applyCard('platinum')">Apply</button></div>
+          <div class="plastic black"><b>Black</b><span>$49.99 / month</span><button class="btn" onclick="applyCard('black')">Apply</button></div>
+          <div class="plastic business"><b>Business</b><span>$19.99 / month</span><button class="btn" onclick="applyCard('business')">Apply</button></div>
+        </div>
+        <div id="myCards"></div>
+      </div>
+
+      <div class="view" id="view-loans">
+        <h2 class="panel-title">Loans</h2>
+        <p class="muted">Loan requests go to admin chat and the withdrawal queue for review.</p>
+        <label>Amount<input id="loanAmt" type="number" min="1"></label><br><br>
+        <label>Purpose<input id="loanWhy" placeholder="Auto, school, personal"></label><br><br>
+        <button class="btn" onclick="askLoan()">Request review</button>
+      </div>
+
+      <div class="view" id="view-wealth">
+        <h2 class="panel-title">Investments</h2>
+        <p class="muted">Savings is your growth account. Admin funds and debits it.</p>
+        <div class="card"><b>Savings balance</b><p id="wealthBal">$0.00</p></div>
+      </div>
+
+      <div class="view" id="view-statements">
+        <h2 class="panel-title">Statements</h2>
+        <p class="muted">Download a statement with your Axia logo, balances, and posted activity.</p>
+        <button class="btn" onclick="downloadStatement()">Download PDF statement</button>
+      </div>
+
+      <div class="view" id="view-notes"><h2 class="panel-title">Alerts</h2><div id="noteList"></div></div>
+
+      <div class="view" id="view-profile">
+        <h2 class="panel-title">Settings</h2>
+        <div class="card" id="profileBox"></div>
+        <div class="row"><label>First name<input id="editFirst"></label><label>Last name<input id="editLast"></label></div>
+        <label>Username<input id="editUser"></label><br><br>
+        <label>Phone<input id="editPhone"></label><br><br>
+        <label>Address<input id="editAddress"></label><br><br>
+        <label>Profile picture<input id="editPic" type="file" accept="image/*"></label><br><br>
+        <button class="btn" onclick="saveProfile()">Save profile</button>
+        <div class="card" style="margin-top:18px">
+          <b>Two-factor PIN</b>
+          <p class="muted">Change your login PIN. No email is sent.</p>
+          <label>New PIN<input id="newPin" type="password" inputmode="numeric" maxlength="6"></label><br><br>
+          <label>Confirm PIN<input id="newPin2" type="password" inputmode="numeric" maxlength="6"></label><br><br>
+          <button class="btn" onclick="changePin()">Update PIN</button>
+          <p id="pinMsg"></p>
+        </div>
+      </div>
+
+      <div class="view" id="view-help">
+        <h2 class="panel-title">Support</h2>
+        <div class="card">Email support@axia-bank.com or use live chat. Messages go only to admin for your account.</div>
+        <label>Secure message<textarea id="helpMsg" rows="4"></textarea></label><br><br>
+        <button class="btn" onclick="sendHelp()">Open live chat</button>
+      </div>
+      <div class="view" id="view-security">
+        <h2 class="panel-title">Security</h2>
+        <p class="muted">PIN change is in Settings.</p>
+      </div>
+      <table style="display:none"><tbody id="recentBody"></tbody></table>
+    </main>
+  </div>
+
+  <div class="profile-pop" id="profilePop">
+    <img id="popPhoto" alt="" style="display:none">
+    <div class="bigph" id="popInitial">A</div>
+    <b id="popName">Customer</b>
+    <p id="popUser"></p>
+    <p id="popEmail"></p>
+    <p id="popDob"></p>
+    <p id="popPhone"></p>
+    <button class="btn light" type="button" id="popClose">Close</button>
+  </div>
+  <button class="chat-btn" id="chatBtn">Chat</button>
+  <div class="chat-box" id="chatBox">
+    <div class="chat-head"><div>Axia Support <small id="chatStatus"></small></div><button type="button" id="chatClose" style="background:#fff;color:#0b3d2a;border:0;padding:4px 8px;cursor:pointer">Close</button></div>
+    <div class="chat-log" id="chatLog"></div>
+    <div id="chatTyping"></div>
+    <form class="chat-form" id="chatForm">
+      <input id="chatFile" type="file" accept="image/*" style="display:none">
+      <button type="button" id="chatPic">Photo</button>
+      <input id="chatInput" placeholder="Message">
+      <button type="submit">Send</button>
+    </form>
+  </div>
+
+  <script>
+    var hideBal=false;
+    function money(n){ return hideBal ? "••••••" : "$"+Number(n||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
+    function rawMoney(n){ return "$"+Number(n||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
+    function esc(s){ return String(s==null?"":s).replace(/[&<>"'`]/g,function(ch){ return ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;","`":"&#96;"})[ch]; }); }
+    function bankToken(){ return localStorage.getItem("axia_customer_token") || ""; }
+    function prettyType(s){
+      s=String(s||"").toLowerCase();
+      if(s==="admin_fund"||s==="credit"||s==="deposit") return "Credit deposit";
+      if(s==="admin_debit"||s==="debit") return "Debit";
+      if(s==="withdrawal") return "Withdrawal";
+      if(s==="transfer") return "Transfer";
+      return s.replace(/_/g," ");
+    }
+    function getTx(){ return JSON.parse(localStorage.getItem("axia_transactions")||"[]"); }
+    function saveTx(t){ localStorage.setItem("axia_transactions", JSON.stringify(t)); }
+    var session=JSON.parse(localStorage.getItem("axia_session")||"null");
+    var user=session?{firstName:session.firstName,lastName:session.lastName,email:session.email,username:session.username,profilePic:session.profilePic,checking:0,savings:0,phone:"",address:""}:{firstName:"Guest",lastName:"",email:"",checking:0,savings:0};
+
+    function setPhoto(imgId, initId, name, pic){
+      var img=document.getElementById(imgId), ini=document.getElementById(initId);
+      if(pic){ img.src=pic; img.style.display="block"; ini.style.display="none"; }
+      else { img.style.display="none"; ini.style.display="flex"; ini.textContent=(name.charAt(0)||"A").toUpperCase(); }
+    }
+    function refreshHeader(){
+      var hour=new Date().getHours();
+      var greet=hour<12?"Good morning":hour<17?"Good afternoon":"Good evening";
+      var name=user.firstName||user.username||"there";
+      document.getElementById("hello").textContent=greet+", "+name;
+      document.getElementById("sideName").textContent=(user.firstName||"")+" "+(user.lastName||"") || user.username || "Customer";
+      setPhoto("dashPhoto","dashInitial",name,user.profilePic);
+      setPhoto("sidePhoto","sideInitial",name,user.profilePic);
+      document.getElementById("totalBal").textContent=money(Number(user.checkCurrent||user.checking)+Number(user.saveCurrent||user.savings));
+      document.getElementById("availBal").textContent=money(Number(user.checking)+Number(user.savings));
+      document.getElementById("checkBal").textContent=money(user.checking);
+      document.getElementById("saveBal").textContent=money(user.savings);
+      var wb=document.getElementById("wealthBal"); if(wb) wb.textContent=money(user.savings);
+      document.getElementById("profileBox").innerHTML="<b>"+esc(user.firstName||"")+" "+esc(user.lastName||"")+"</b><br>"+esc(user.email||"")+"<br>"+esc(user.phone||"");
+      document.getElementById("editFirst").value=user.firstName||"";
+      document.getElementById("editLast").value=user.lastName||"";
+      document.getElementById("editUser").value=user.username||"";
+      document.getElementById("editPhone").value=user.phone||"";
+      document.getElementById("editAddress").value=user.address||"";
+    }
+    refreshHeader();
+    document.getElementById("eyeBtn").onclick=function(){ hideBal=!hideBal; refreshHeader(); };
+    function userTag(){
+      var key="axia_user_tag_"+(user.email||user.username||"x");
+      var tag=localStorage.getItem(key);
+      if(!tag){
+        tag=String(Math.floor(10+Math.random()*90));
+        localStorage.setItem(key, tag);
+      }
+      return tag;
+    }
+    function fillProfilePop(){
+      var name=(user.firstName||"")+" "+(user.lastName||"");
+      document.getElementById("popName").textContent=name.trim()||"Customer";
+      document.getElementById("popUser").textContent="Username: "+(user.username||"—")+userTag();
+      document.getElementById("popEmail").textContent="Email: "+(user.email||"—");
+      document.getElementById("popDob").textContent="Date of birth: "+(user.dob||"—");
+      document.getElementById("popPhone").textContent="Phone: "+(user.phone||"—");
+      setPhoto("popPhoto","popInitial",user.firstName||user.username||"A",user.profilePic);
+    }
+    function showProfilePop(){
+      fillProfilePop();
+      document.getElementById("profilePop").classList.add("on");
+    }
+    ["dashPhoto","dashInitial","sidePhoto","sideInitial"].forEach(function(id){
+      var el=document.getElementById(id);
+      if(el) el.onclick=function(e){ e.stopPropagation(); showProfilePop(); };
+    });
+    document.getElementById("popClose").onclick=function(){ document.getElementById("profilePop").classList.remove("on"); };
+    document.addEventListener("click", function(e){
+      var pop=document.getElementById("profilePop");
+      if(pop && !pop.contains(e.target)) pop.classList.remove("on");
+    });
+
+    function showView(id){
+      document.querySelectorAll(".view").forEach(function(v){v.classList.remove("active");});
+      document.querySelectorAll(".nav").forEach(function(n){n.classList.remove("on");});
+      var el=document.getElementById("view-"+id);
+      if(el) el.classList.add("active");
+      var nav=document.querySelector('.nav[data-view="'+id+'"]');
+      if(nav) nav.classList.add("on");
+      if(id==="cards") loadCards();
+      if(id==="notes") loadBankNotes();
+      renderTx();
+    }
+    function setMenu(open){
+      var menu=document.querySelector(".menu");
+      var dots=document.getElementById("menuDots");
+      if(!menu||!dots) return;
+      if(open){ menu.classList.add("open"); dots.classList.add("hide"); }
+      else { menu.classList.remove("open"); dots.classList.remove("hide"); }
+    }
+    document.getElementById("menuDots").onclick=function(e){
+      e.stopPropagation();
+      setMenu(true);
+    };
+    document.addEventListener("click", function(e){
+      var menu=document.querySelector(".menu");
+      var dots=document.getElementById("menuDots");
+      if(menu && !menu.contains(e.target) && e.target!==dots && !dots.contains(e.target)) setMenu(false);
+    });
+        document.querySelectorAll("[data-view]").forEach(function(el){
+      el.onclick=function(){ showView(el.getAttribute("data-view")); setMenu(false); };
+    });
+
+    function makeTx(type, inputId){
+      var amount=Number(document.getElementById(inputId).value);
+      if(!amount||amount<=0){ alert("Enter a valid amount"); return; }
+      var tok=bankToken();
+      if(!tok){ alert("Sign in with password and PIN first"); return; }
+      if(type==="Deposit" || type==="Withdrawal"){
+        var path=type==="Deposit"?"/api/deposits":"/api/withdrawals";
+        var body={ amount: amount };
+        if(type==="Deposit") body.method=(document.getElementById("depMethod")||{}).value||"transfer";
+        fetch(path,{ method:"POST", headers:{ "Content-Type":"application/json", Authorization:"Bearer "+tok }, body:JSON.stringify(body) })
+          .then(function(r){ return r.json(); })
+          .then(function(d){
+            if(d.error){ alert(d.error); return; }
+            alert(type+" sent to admin for review");
+            showView("tx");
+            loadBankTx();
+          });
+        return;
+      }
+      if(document.getElementById("toAcct").value==="External bank"){
+        fetch("/api/withdrawals",{ method:"POST", headers:{ "Content-Type":"application/json", Authorization:"Bearer "+tok }, body:JSON.stringify({ amount:amount, note: (document.getElementById("trNote")||{}).value||"external" }) })
+          .then(function(r){ return r.json(); })
+          .then(function(d){ alert(d.error||"Withdrawal is pending admin approval"); showView("tx"); loadBankTx(); });
+        return;
+      }
+      fetch("/api/transfers/internal",{
+        method:"POST",
+        headers:{ "Content-Type":"application/json", Authorization:"Bearer "+tok },
+        body:JSON.stringify({
+          from: document.getElementById("fromAcct").value,
+          to: document.getElementById("toAcct").value,
+          amount: amount
+        })
+      }).then(function(r){ return r.json(); }).then(function(d){
+        if(d.error){ alert(d.error); return; }
+        alert("Money moved between your accounts");
+        showView("accounts");
+        syncBank();
+      });
+    }
+    function payBill(){
+      document.getElementById("wdAmount").value=document.getElementById("billAmount").value;
+      makeTx("Withdrawal","wdAmount");
+    }
+    function askLoan(){
+      var amt=document.getElementById("loanAmt").value, why=document.getElementById("loanWhy").value;
+      if(!amt){ alert("Enter an amount"); return; }
+      openUserChat();
+      document.getElementById("chatInput").value="Loan review request: $"+amt+" for "+(why||"personal");
+    }
+
+    function renderTx(){
+      var txs=getTx();
+      var q=((document.getElementById("txSearch")||{}).value||((document.getElementById("dashSearch")||{}).value)||"").toLowerCase();
+      var filtered=txs.filter(function(t){
+        return (t.title||"").toLowerCase().indexOf(q)>-1 || (t.type||"").toLowerCase().indexOf(q)>-1;
+      });
+      var html="";
+      filtered.forEach(function(t){
+        var amt=Number(t.amount||0);
+        html+="<tr><td>"+esc(t.date||"")+"</td><td>"+esc(prettyType(t.type||""))+"</td><td>"+esc(t.title||t.type||"Transaction")+"<br><small>"+esc(t.sub||t.status||"")+"</small></td>";
+        html+="<td class='"+(amt>=0?"green":"red")+"'>"+rawMoney(Math.abs(amt))+"</td></tr>";
+      });
+      var home=document.getElementById("homeRecent");
+      if(home){
+        var top=filtered.slice(0,2);
+        home.innerHTML = top.length ? top.map(function(t){
+          var amt=Number(t.amount||0);
+          return "<div class='recent-item'><span>"+esc(t.title||t.type||"Transaction")+"<br><small>"+esc(t.date||"")+"</small></span><span class='"+(amt>=0?"green":"red")+"'>"+rawMoney(Math.abs(amt))+"</span></div>";
+        }).join("") : "<div class='recent-item'>No recent activity</div>";
+      }
+      var el=document.getElementById("allBody");
+      if(el) el.innerHTML=html||"<tr><td colspan='4'>No activity yet</td></tr>";
+      var rb=document.getElementById("recentBody"); if(rb) rb.innerHTML=html;
+      var count=document.getElementById("txCount");
+      if(count) count.textContent=filtered.length+" transactions";
+      var pending=txs.filter(function(t){return (t.status||"").toLowerCase()==="pending";});
+      var ph="";
+      pending.forEach(function(t){
+        ph+="<tr><td>"+esc(t.date||"")+"</td><td>"+esc(t.type)+"</td><td>Pending</td><td class='green'>"+rawMoney(Math.abs(t.amount))+"</td></tr>";
+      });
+      var pb=document.getElementById("pendBody");
+      if(pb) pb.innerHTML=ph||"<tr><td colspan='4'>No pending requests</td></tr>";
+    }
+    renderTx();
+
+    function loadBankTx(){
+      var tok=bankToken(); if(!tok) return;
+      fetch("/api/transactions",{ headers:{ Authorization:"Bearer "+tok } }).then(function(r){ return r.json(); }).then(function(d){
+        var rows=(d.transactions||[]).map(function(t){
+          var amt=(Number(t.amount_cents||0)/100);
+          if(t.direction==="debit") amt=-amt;
+          return { date:(t.created_at||"").slice(0,10), type:t.type, title:prettyType(t.type), sub:t.status, amount:amt, status:t.status };
+        });
+        if(rows.length){ saveTx(rows); renderTx(); }
+      }).catch(function(){});
+    }
+    function loadBankNotes(){
+      var tok=bankToken(); if(!tok) return;
+      fetch("/api/notifications",{ headers:{ Authorization:"Bearer "+tok } }).then(function(r){ return r.json(); }).then(function(d){
+        var html="";
+        (d.notifications||[]).forEach(function(n){ html+="<div class='card'><b>"+esc(n.title||"Notice")+"</b><p>"+esc(n.body||"")+"</p></div>"; });
+        document.getElementById("noteList").innerHTML=html||"<div class='card'>No alerts yet</div>";
+      }).catch(function(){});
+    }
+    function syncBank(){
+      var tok=bankToken(); if(!tok) return;
+      fetch("/api/me",{ headers:{ Authorization:"Bearer "+tok } }).then(function(r){ return r.json(); }).then(function(me){
+        if(!me.customer) return;
+        user.firstName=me.customer.first_name;
+        user.lastName=me.customer.last_name;
+        user.username=me.customer.username;
+        user.email=me.customer.email;
+        user.phone=me.customer.phone;
+        user.address=me.customer.address;
+        user.profilePic=me.customer.profile_pic||user.profilePic;
+        user.dob=me.customer.dob||user.dob||"";
+        var tag=document.getElementById("dormantTag");
+        if(tag) tag.style.display=me.customer.status==="dormant"?"block":"none";
+        return fetch("/api/accounts",{ headers:{ Authorization:"Bearer "+tok } });
+      }).then(function(r){ return r?r.json():{}; }).then(function(d){
+        (d.accounts||[]).forEach(function(a){
+          var n=Number(a.available);
+          if(String(a.product).indexOf("Checking")!==-1){
+            user.checking=n;
+            user.checkCurrent=Number(a.current||n);
+            document.getElementById("checkMeta").textContent="Account "+a.account_number+" · Routing "+a.routing_number;
+            document.getElementById("acctSub").textContent="Checking "+a.account_number;
+          }
+          if(String(a.product).indexOf("Savings")!==-1){
+            user.savings=n;
+            user.saveCurrent=Number(a.current||n);
+            document.getElementById("saveMeta").textContent="Account "+a.account_number+" · Routing "+a.routing_number;
+          }
+        });
+        refreshHeader();
+        loadBankTx();
+        loadBankNotes();
+        loadCards();
+      }).catch(function(){});
+    }
+    syncBank();
+
+    function applyCard(product){
+      var tok=bankToken(); if(!tok){ alert("Sign in first"); return; }
+      fetch("/api/cards",{ method:"POST", headers:{ "Content-Type":"application/json", Authorization:"Bearer "+tok }, body:JSON.stringify({ product:product }) })
+        .then(function(r){ return r.json(); }).then(function(d){
+          alert(d.error||"Application sent. Admin must approve before card details appear.");
+          loadCards();
+        });
+    }
+    var revealOn=false;
+    function loadCards(){
+      var tok=bankToken(); if(!tok) return;
+      fetch("/api/cards"+(revealOn?"?reveal=1":""),{ headers:{ Authorization:"Bearer "+tok } }).then(function(r){ return r.json(); }).then(function(d){
+        var html="";
+        (d.cards||[]).forEach(function(c){
+          var klass=String(c.product||"").toLowerCase();
+          html+="<div class='plastic "+esc(klass)+"'>";
+          html+="<div><b>AXIA "+esc(c.product)+"</b><small> "+esc(c.fee)+"</small></div>";
+          if(c.status!=="approved") html+="<div>Application "+esc(c.status)+". Number hidden until approved.</div>";
+          else {
+            html+="<div class='num'>"+(revealOn&&c.number?esc(c.number.replace(/(.{4})/g,"$1 ").trim()):"•••• •••• •••• "+esc(c.last4))+"</div>";
+            html+="<div>"+esc(c.holder||"")+" · EXP "+(revealOn?esc(c.exp):"••/••")+" · CVV "+(revealOn?esc(c.cvv):"•••")+"</div>";
+          }
+          html+="</div>";
+          html+="<p>Online limit $50,000 · ATM limit $25,000 · Status: "+(c.frozen?"Frozen":esc(c.status))+"</p>";
+          if(c.status==="approved"){
+            html+="<button class='btn light' onclick='toggleReveal()'>"+(revealOn?"Hide details":"Show details")+"</button> ";
+            html+="<button class='btn' onclick='freezeCard("+c.id+","+(c.frozen?0:1)+")'>"+(c.frozen?"Unfreeze":"Freeze")+"</button>";
+          }
+        });
+        document.getElementById("myCards").innerHTML=html||"<p class='muted'>No card application yet.</p>";
+      });
+    }
+    function toggleReveal(){ revealOn=!revealOn; loadCards(); }
+    function freezeCard(id, frozen){
+      fetch("/api/cards/"+id+"/freeze",{ method:"POST", headers:{ "Content-Type":"application/json", Authorization:"Bearer "+bankToken() }, body:JSON.stringify({ frozen:!!frozen }) })
+        .then(function(r){ return r.json(); }).then(function(){ loadCards(); });
+    }
+    function downloadStatement(){
+      var w=window.open("", "_blank");
+      var rows=getTx().map(function(t){ return "<tr><td>"+esc(t.date||"")+"</td><td>"+esc(prettyType(t.type||""))+"</td><td>"+rawMoney(t.amount)+"</td></tr>"; }).join("");
+      w.document.write("<html><head><title>Axia Statement</title><style>body{font-family:Georgia;padding:32px;color:#2c241c}h1{color:#8b5e3c}</style></head><body>");
+      w.document.write("<img src='logo.png' height='36'><h1>Welcome to Axia Bank</h1>");
+      w.document.write("<p>Statement for "+esc(user.firstName||"")+" "+esc(user.lastName||"")+" · "+esc(user.email||"")+"</p>");
+      w.document.write("<p>Checking "+rawMoney(user.checking)+" · Savings "+rawMoney(user.savings)+" · Total "+rawMoney(Number(user.checking)+Number(user.savings))+"</p>");
+      w.document.write("<table border='1' cellpadding='8' cellspacing='0'><tr><th>Date</th><th>Type</th><th>Amount</th></tr>"+rows+"</table></body></html>");
+      w.document.close(); w.focus(); w.print();
+    }
+    function saveRecipient(){
+      var list=JSON.parse(localStorage.getItem("axia_recipients")||"[]");
+      list.push({ name:document.getElementById("recName").value, acct:document.getElementById("recAcct").value });
+      localStorage.setItem("axia_recipients", JSON.stringify(list));
+      document.getElementById("recList").innerHTML=list.map(function(r){ return "<div class='card'>"+esc(r.name)+" · "+esc(r.acct)+"</div>"; }).join("");
+    }
+    function saveProfile(){
+      var send=function(pic){
+        fetch("/api/profile",{ method:"POST", headers:{ "Content-Type":"application/json", Authorization:"Bearer "+bankToken() }, body:JSON.stringify({
+          first_name:document.getElementById("editFirst").value,
+          last_name:document.getElementById("editLast").value,
+          phone:document.getElementById("editPhone").value,
+          address:document.getElementById("editAddress").value,
+          profile_pic:pic||user.profilePic||""
+        })}).then(function(r){ return r.json(); }).then(function(d){
+          if(d.error){ alert(d.error); return; }
+          alert("Profile saved"); syncBank();
+        });
+      };
+      var f=(document.getElementById("editPic")||{}).files;
+      if(f && f[0]){
+        var r=new FileReader();
+        r.onload=function(ev){ send(ev.target.result); };
+        r.readAsDataURL(f[0]);
+      } else send("");
+    }
+    function changePin(){
+      fetch("/api/security/pin",{ method:"POST", headers:{ "Content-Type":"application/json", Authorization:"Bearer "+bankToken() }, body:JSON.stringify({ pin:document.getElementById("newPin").value, pin_confirm:document.getElementById("newPin2").value }) })
+        .then(function(r){ return r.json(); }).then(function(d){ document.getElementById("pinMsg").textContent=d.error||"PIN updated"; });
+    }
+    function sendHelp(){
+      openUserChat();
+      document.getElementById("chatInput").value=document.getElementById("helpMsg").value;
+    }
+    document.getElementById("logoutLink").onclick=function(){
+      fetch("/api/auth/logout",{ method:"POST", headers:{ Authorization:"Bearer "+bankToken() } });
+      localStorage.removeItem("axia_session");
+      localStorage.removeItem("axia_customer_token");
+    };
+
+    var chatWs=null;
+    function addChatBubble(m){
+      var log=document.getElementById("chatLog");
+      var div=document.createElement("div");
+      div.className="bubble "+(m.from==="user"?"me":"them");
+      if(m.image){ var img=document.createElement("img"); img.src=m.image; img.style.maxWidth="160px"; img.style.display="block"; div.appendChild(img); }
+      if(m.text){ var p=document.createElement("div"); p.textContent=String(m.text); div.appendChild(p); }
+      log.appendChild(div); log.scrollTop=log.scrollHeight;
+    }
+    function connectChat(){
+      chatWs=new WebSocket((location.protocol==="https:"?"wss://":"ws://")+location.host+"/chat");
+      chatWs.onopen=function(){
+        document.getElementById("chatStatus").textContent="Online";
+        chatWs.send(JSON.stringify({ type:"join", role:"user", token:bankToken() }));
+        chatWs.send(JSON.stringify({ type:"seen" }));
+      };
+      chatWs.onmessage=function(ev){
+        var data=JSON.parse(ev.data);
+        if(data.type==="error"){ document.getElementById("chatStatus").textContent=data.error; return; }
+        if(data.type==="history") (data.messages||[]).forEach(addChatBubble);
+        if(data.type==="message") addChatBubble(data.message);
+        if(data.type==="typing" && data.from==="admin"){
+          var tip=document.getElementById("chatTyping");
+          if(tip) tip.textContent=data.on?"Admin is typing…":"";
+        }
+        if(data.type==="seen"){ document.getElementById("chatStatus").textContent="Seen"; }
+      };
+      chatWs.onclose=function(){ document.getElementById("chatStatus").textContent="Offline"; chatWs=null; };
+    }
+    function closeUserChat(){
+      var box=document.getElementById("chatBox");
+      box.classList.remove("open");
+      box.style.display="none";
+    }
+    function openUserChat(){
+      var box=document.getElementById("chatBox");
+      box.classList.add("open");
+      box.style.display="flex";
+      if(!bankToken()){
+        document.getElementById("chatStatus").textContent="Sign in first";
+        return;
+      }
+      if(!chatWs || chatWs.readyState>1) connectChat();
+      else if(chatWs.readyState===1) chatWs.send(JSON.stringify({ type:"seen" }));
+    }
+    document.getElementById("chatBtn").onclick=function(){
+      var box=document.getElementById("chatBox");
+      if(box.classList.contains("open")) closeUserChat();
+      else openUserChat();
+    };
+    document.getElementById("chatClose").onclick=function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      closeUserChat();
+    };
+    document.getElementById("chatPic").onclick=function(){ document.getElementById("chatFile").click(); };
+    document.getElementById("chatFile").onchange=function(){
+      var f=this.files[0]; if(!f) return;
+      var r=new FileReader();
+      r.onload=function(ev){
+        if(chatWs && chatWs.readyState===1) chatWs.send(JSON.stringify({ type:"chat", text:"Photo", image:ev.target.result }));
+      };
+      r.readAsDataURL(f);
+    };
+    document.getElementById("chatForm").onsubmit=function(e){
+      e.preventDefault();
+      var text=document.getElementById("chatInput").value.trim();
+      if(!text) return;
+      if(!chatWs || chatWs.readyState!==1){
+        document.getElementById("chatStatus").textContent="Connecting…";
+        openUserChat();
+        return;
+      }
+      chatWs.send(JSON.stringify({ type:"chat", text:text }));
+      document.getElementById("chatInput").value="";
+    };
+  </script>
+</body>
+</html>

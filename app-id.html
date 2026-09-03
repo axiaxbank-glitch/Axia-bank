@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Axia — ID upload</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:Arial;background:#f4efe9;color:#1f1a17}
+    .nav{height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;background:#fff;border-bottom:1px solid #eadfd6}
+    .brand{font-weight:700;letter-spacing:.06em}
+    .wrap{max-width:1100px;margin:28px auto;padding:0 20px;display:grid;grid-template-columns:1.15fr .85fr;gap:24px}
+    .card{background:#fff;border-radius:16px;padding:28px}
+    .drop{border:1px dashed #d7c7ba;border-radius:12px;padding:18px;margin:8px 0 14px;background:#faf7f4}
+    input{width:100%;padding:11px;margin:6px 0 12px;border:1px solid #e4d8ce;border-radius:10px}
+    button{width:100%;padding:13px;background:#111;color:#fff;border:0;border-radius:999px;cursor:pointer}
+    .err{color:#8a2b2b}
+    .art{border-radius:16px;background:#ead7c8;min-height:480px;display:flex;align-items:end;padding:24px;color:#5a463a}
+    .note{color:#6f6258;font-size:13px;margin-bottom:12px}
+    @media(max-width:800px){.wrap{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <header class="nav"><div class="brand">AXIA</div></header>
+  <main class="wrap">
+    <section class="card">
+      <h1>SSN and ID upload</h1>
+      <p class="note">Class demo only. Use a practice 9-digit number, not a real SSN. Admin reviews the ID photos.</p>
+      <label>Government ID front</label>
+      <div class="drop"><input id="front" type="file" accept="image/*"></div>
+      <label>Government ID back</label>
+      <div class="drop"><input id="back" type="file" accept="image/*"></div>
+      <label>Practice SSN</label>
+      <input id="ssn" placeholder="000-00-0000" maxlength="11">
+      <label><input id="agree" type="checkbox"> I confirm this is practice information for training</label>
+      <p class="err" id="err"></p>
+      <button type="button" id="go">Submit for admin approval</button>
+    </section>
+    <aside class="art">Identity check · Admin review next</aside>
+  </main>
+  <script>
+    function readPic(input, cb) {
+      var file = input.files[0];
+      if (!file) { cb(""); return; }
+      if (file.size > 700000) { document.getElementById("err").textContent = "Each photo must be under 700KB"; cb(""); return; }
+      var r = new FileReader();
+      r.onload = function (e) { cb(e.target.result); };
+      r.readAsDataURL(file);
+    }
+    document.getElementById("go").onclick = function () {
+      document.getElementById("err").textContent = "";
+      if (!document.getElementById("agree").checked) { document.getElementById("err").textContent = "Confirm the practice checkbox"; return; }
+      var token = localStorage.getItem("axia_apply_token");
+      if (!token) { location.href = "app-register.html"; return; }
+      readPic(document.getElementById("front"), function (front) {
+        readPic(document.getElementById("back"), function (back) {
+          fetch("/api/auth/kyc", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ apply_token: token, ssn: document.getElementById("ssn").value, id_front: front, id_back: back })
+          }).then(function (r) { return r.json(); }).then(function (d) {
+            if (d.error) { document.getElementById("err").textContent = d.error; return; }
+            location.href = "app-waiting.html";
+          }).catch(function () { document.getElementById("err").textContent = "Start the server first"; });
+        });
+      });
+    };
+  </script>
+</body>
+</html>

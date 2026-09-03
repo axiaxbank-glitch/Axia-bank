@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Axia Bank – Admin Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <script src="js/axia-mail.js"></script>
+  <style>
+    :root{--brown:#8b5e3c;--ink:#2c241c;--muted:#8a7b6e;--side:#f4eee6;--line:#eadfd3}
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:Georgia,"Times New Roman",serif;background:#fbf8f4;color:var(--ink)}
+    .shell{display:grid;grid-template-columns:228px 1fr;min-height:100vh}
+    .side{background:var(--side);padding:22px 12px;display:flex;flex-direction:column;border-right:1px solid var(--line)}
+    .logo{display:flex;align-items:center;gap:10px;padding:0 8px 18px;font-weight:700;letter-spacing:.08em;color:var(--brown);font-size:13px}
+    .logo img{width:28px;height:28px;object-fit:contain}
+    .nav{width:100%;border:0;background:transparent;color:#5c4a3c;text-align:left;padding:9px 12px;border-radius:10px;cursor:pointer;margin-bottom:2px;font:inherit;font-size:14px}
+    .nav.on{background:#efe4d6;color:var(--ink);font-weight:700}
+    .side-foot{margin-top:auto;padding:14px 8px 6px;border-top:1px solid var(--line);display:flex;gap:10px;align-items:center}
+    .avatar{width:36px;height:36px;border-radius:50%;background:var(--brown);color:#fff;display:flex;align-items:center;justify-content:center}
+    .side-foot small{display:block;color:var(--muted);font-size:11px}
+    .main{padding:24px 32px 90px}
+    .who-bar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+    .who{font-size:13px;color:var(--muted)}
+    .head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px}
+    .head h1{font-size:28px;font-weight:600}
+    .head p{color:var(--muted);margin-top:4px;font-size:14px}
+    .tools{display:flex;align-items:center;gap:12px}
+    .tools input{border:1px solid var(--line);background:#fff;border-radius:20px;padding:8px 14px;width:180px;font:inherit}
+    .bell{width:36px;height:36px;border:1px solid var(--line);border-radius:50%;background:#fff;cursor:pointer}
+    .kpis{display:grid;grid-template-columns:repeat(4,1fr);background:#f3ece4;border-radius:14px;padding:18px 8px;margin-bottom:22px}
+    .kpi{padding:0 18px;border-right:1px solid #e2d5c6;cursor:pointer}
+    .kpi:last-child{border-right:0}
+    .kpi span{display:block;color:var(--muted);font-size:13px;margin-bottom:6px}
+    .kpi b{font-size:26px;font-weight:600}
+    .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+    .tile{background:#fff;border:1px solid var(--line);border-radius:16px;padding:22px 16px;text-align:center;cursor:pointer;min-height:140px}
+    .ico{color:var(--brown);font-size:22px;margin-bottom:10px}
+    .tile b{display:block;margin-bottom:6px}
+    .tile p{color:var(--muted);font-size:13px}
+    .view{display:none}.view.on{display:block}
+    table{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden}
+    th,td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;font-size:14px}
+    .btn{background:#6b4428;color:#fff;border:0;padding:8px 12px;margin:2px;cursor:pointer;border-radius:8px;font:inherit}
+    .btn.ghost{background:#fff;color:#6b4428;border:1px solid var(--line)}
+    input,select,textarea{width:100%;padding:8px;margin:4px 0 10px;border:1px solid var(--line);border-radius:8px;font:inherit}
+    .card{background:#fff;border:1px solid var(--line);padding:16px;margin-top:12px;border-radius:14px}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .tag{padding:3px 8px;border-radius:10px;font-size:12px;background:#eadfd3}
+    .tag.off{background:#e8d0d0}
+    .dots{position:relative;display:inline-block}
+    .dots>button{background:#fff;border:1px solid var(--line);width:32px;height:32px;cursor:pointer;border-radius:8px}
+    .menu{display:none;position:absolute;right:0;top:34px;background:#fff;border:1px solid var(--line);min-width:180px;z-index:5;border-radius:10px}
+    .menu.show{display:block}
+    .menu button{display:block;width:100%;text-align:left;border:0;background:#fff;padding:9px 12px;cursor:pointer}
+    .chatfab{position:fixed;right:20px;bottom:20px;width:56px;height:56px;border-radius:50%;border:0;background:#6b4428;color:#fff;cursor:pointer;z-index:20}
+    .chatbox{display:none;position:fixed;right:20px;bottom:86px;width:320px;height:420px;background:#fff;border:1px solid var(--line);z-index:20;flex-direction:column;border-radius:12px;overflow:hidden}
+    .chatbox.on{display:flex}
+    .chatbox header{background:#6b4428;color:#fff;padding:10px;display:flex;justify-content:space-between;align-items:center}
+    .threads,.log{flex:1;overflow:auto;padding:8px;font-size:13px}
+    .chat-send{display:flex;gap:6px;padding:8px;border-top:1px solid var(--line)}
+    .chat-send input{flex:1;padding:8px;border:1px solid var(--line);border-radius:8px}
+    .chat-send button{background:#6b4428;color:#fff;border:0;border-radius:8px;padding:8px 12px;cursor:pointer}
+    @media(max-width:1000px){.shell{grid-template-columns:1fr}.side{display:none}.kpis,.tiles{grid-template-columns:1fr 1fr}}
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="side">
+      <div class="logo"><img src="logo.png" alt="">AXIA BANK</div>
+      <button type="button" class="nav on" data-go="dash">Dashboard</button>
+      <button type="button" class="nav" data-go="approved">Customers</button>
+      <button type="button" class="nav" data-go="review">Approvals</button>
+      <button type="button" class="nav" data-go="deposits">Deposits</button>
+      <button type="button" class="nav" data-go="withdrawals">Withdrawals</button>
+      <button type="button" class="nav" data-go="cards">Cards</button>
+      <button type="button" class="nav" data-go="fund">Fund</button>
+      <button type="button" class="nav" data-go="debit">Debit</button>
+      <button type="button" class="nav" data-go="tx">Transactions</button>
+      <button type="button" class="nav" data-go="email">Send email</button>
+      <button type="button" class="nav" data-go="status">Activate / Dormant</button>
+      <button type="button" class="nav" data-go="security">Security</button>
+      <button type="button" class="nav" data-go="edit">Edit profile</button>
+      <button type="button" class="nav" data-go="chat">Live chat</button>
+      <a class="nav" href="admin-login.html" id="adminOut">Sign out</a>
+      <div class="side-foot">
+        <div class="avatar" id="adminInitial">A</div>
+        <div><div id="adminName">Axia Admin</div><small>Super Admin</small></div>
+      </div>
+    </aside>
+    <main class="main">
+      <div class="who-bar">
+        <span class="who" id="who">No student selected.</span>
+        <select id="pickStudent" style="max-width:280px"><option value="">Select a student</option></select>
+      </div>
+
+      <div class="view on" id="view-dash">
+        <div class="head">
+          <div>
+            <h1 id="hello">Good morning</h1>
+            <p>Administrator control panel</p>
+          </div>
+          <div class="tools">
+            <input id="adminSearch" placeholder="Search students">
+            <button type="button" class="bell" data-go="review">●</button>
+            <div class="avatar" id="adminPic">A</div>
+          </div>
+        </div>
+        <div class="kpis">
+          <div class="kpi" data-go="approved"><span>Total Customers</span><b id="sCust">0</b></div>
+          <div class="kpi" data-go="tx"><span>Assets Under Management</span><b id="sAum">$0.00</b></div>
+          <div class="kpi" data-go="review"><span>Pending Approvals</span><b id="sAcc">0</b></div>
+          <div class="kpi" data-go="chat"><span>Active Sessions</span><b id="sSes">—</b></div>
+        </div>
+        <div class="tiles">
+          <div class="tile" data-go="approved"><div class="ico">▣</div><b>User Management</b><p>View and manage all customers</p></div>
+          <div class="tile" data-go="approved"><div class="ico">▤</div><b>All Accounts</b><p>Search and control accounts</p></div>
+          <div class="tile" data-go="tx"><div class="ico">⇄</div><b>Live Transactions</b><p>Posted activity for the selected student</p></div>
+          <div class="tile" data-go="review"><div class="ico">↻</div><b>Pending Applications</b><p>Open or decline new accounts</p></div>
+          <div class="tile" data-go="withdrawals"><div class="ico">🤝</div><b>Withdrawal Queue</b><p>Approve or decline cash-out requests</p></div>
+          <div class="tile" data-go="deposits"><div class="ico">↓</div><b>Deposit Review</b><p>Approve or decline deposits</p></div>
+          <div class="tile" data-go="cards"><div class="ico">▭</div><b>Card Issuance</b><p>Approve or decline cards</p></div>
+          <div class="tile" data-go="fund"><div class="ico">+</div><b>Fund Account</b><p>Credit checking or savings</p></div>
+          <div class="tile" data-go="debit"><div class="ico">−</div><b>Debit Account</b><p>Deduct from checking or savings</p></div>
+          <div class="tile" data-go="email"><div class="ico">✉</div><b>Send Email</b><p>Welcome, fund, debit templates</p></div>
+          <div class="tile" data-go="security"><div class="ico">👥</div><b>Security</b><p>Reset username, password, PIN</p></div>
+          <div class="tile" data-go="edit"><div class="ico">⚙</div><b>Edit Information</b><p>Change the selected student profile</p></div>
+        </div>
+        <div style="display:none"><b id="sDep">0</b><b id="sWd">0</b></div>
+      </div>
+
+      <div class="view" id="view-review"><h2>Approvals</h2><div id="reviewBox"></div></div>
+      <div class="view" id="view-approved"><h2>Customers</h2><div id="approvedBox"></div></div>
+      <div class="view" id="view-fund">
+        <div class="card">
+          <h3>Fund account</h3>
+          <div class="row"><label>Amount<input id="fAmt" type="number"></label><label>Account type<select id="fType"><option value="checking">Checking</option><option value="savings">Savings</option></select></label></div>
+          <label>Account number<input id="fAcct"></label>
+          <label>Bank name<input id="fBank" value="Axia Bank"></label>
+          <label>Name on account<input id="fName"></label>
+          <label>Set time<input id="fTime" type="datetime-local"></label>
+          <button type="button" class="btn" id="fGo">Post funds</button><p id="fMsg"></p>
+        </div>
+      </div>
+      <div class="view" id="view-debit">
+        <div class="card">
+          <h3>Debit account</h3>
+          <div class="row"><label>Amount<input id="dAmt" type="number"></label><label>Account type<select id="dType"><option value="checking">Checking</option><option value="savings">Savings</option></select></label></div>
+          <label>Account number<input id="dAcct"></label>
+          <label>Bank name<input id="dBank" value="Axia Bank"></label>
+          <label>Name on account<input id="dName"></label>
+          <label>Set time<input id="dTime" type="datetime-local"></label>
+          <button type="button" class="btn" id="dGo">Post debit</button><p id="dMsg"></p>
+        </div>
+      </div>
+      <div class="view" id="view-edit">
+        <div class="card">
+          <h3>Edit registration information</h3>
+          <div class="row"><label>First name<input id="eFirst"></label><label>Last name<input id="eLast"></label></div>
+          <label>Username<input id="eUser"></label>
+          <label>Email<input id="eEmail" disabled></label>
+          <label>Phone<input id="ePhone"></label>
+          <label>Address<input id="eAddr"></label>
+          <label>Country<input id="eCountry"></label>
+          <label>Employment<input id="eEmp"></label>
+          <button type="button" class="btn" id="eSave">Save information</button><p id="eMsg"></p>
+        </div>
+      </div>
+      <div class="view" id="view-status">
+        <div class="card">
+          <h3>Activate / Dormant</h3>
+          <p id="stNow"></p>
+          <button type="button" class="btn" id="stOn">Activate</button>
+          <button type="button" class="btn ghost" id="stOff">Set dormant</button>
+          <p id="stMsg"></p>
+        </div>
+      </div>
+      <div class="view" id="view-email">
+        <div class="card">
+          <h3>Send email</h3>
+          <label>Template<select id="mKind"><option value="welcome">Welcome</option><option value="deposit">Deposit / fund</option><option value="debit">Debit</option><option value="reset">Reset style</option></select></label>
+          <label>Amount<input id="mAmt"></label>
+          <label>Message<textarea id="mText" rows="4"></textarea></label>
+          <button type="button" class="btn" id="mGo">Send with EmailJS</button><p id="mMsg"></p>
+        </div>
+      </div>
+      <div class="view" id="view-tx"><h2>Transactions</h2><div id="txBox"></div></div>
+      <div class="view" id="view-security">
+        <div class="card">
+          <h3>Security reset — no email</h3>
+          <label>New username<input id="sUser"></label>
+          <div class="row"><label>New password<input id="sPass" type="password"></label><label>Confirm password<input id="sPass2" type="password"></label></div>
+          <div class="row"><label>New PIN<input id="sPin" type="password"></label><label>Confirm PIN<input id="sPin2" type="password"></label></div>
+          <button type="button" class="btn" id="sGo">Save security changes</button><p id="sMsg"></p>
+        </div>
+      </div>
+      <div class="view" id="view-deposits"><h2>Deposit Review</h2><div id="depBox"></div></div>
+      <div class="view" id="view-withdrawals"><h2>Withdrawal Queue</h2><div id="wdBox"></div></div>
+      <div class="view" id="view-notes"><div class="card" id="noteBox">Pick a student first.</div></div>
+      <div class="view" id="view-chat"><div class="card">Use the floating Chat button. Click a student email, then type and press Enter.</div></div>
+      <div class="view" id="view-cards"><h2>Card Issuance</h2><div id="cardBox"></div></div>
+    </main>
+  </div>
+  <button type="button" class="chatfab" id="chatFab">Chat</button>
+  <div class="chatbox" id="chatBox">
+    <header>
+      <span>Student messages</span>
+      <button type="button" id="chatClose" class="btn ghost">Close</button>
+    </header>
+    <div class="threads" id="chatThreads"></div>
+    <div class="log" id="chatLog"></div>
+    <input id="chatTo" placeholder="Customer email" value="student@axia.local" style="margin:6px;padding:8px;width:calc(100% - 12px);box-sizing:border-box">
+    <div class="chat-send">
+      <input id="chatIn" placeholder="Type a message">
+      <button type="button" id="chatSend" onclick="sendAdminChat()">Send</button>
+    </div>
+  </div>
+  <script src="js/admin-app.js"></script>
+
+<script>
+function sendAdminChat() {
+  var input = document.getElementById("chatIn");
+  var to = document.getElementById("chatTo");
+  var log = document.getElementById("chatLog");
+  var text = (input && input.value || "").trim();
+  if (!text) { log.textContent = "Type a message first"; return; }
+  if (to && to.value.trim()) openThread = to.value.trim().toLowerCase();
+  if (!openThread) { log.textContent = "Enter the customer email"; return; }
+  if (typeof chatConnect === "function" && (!chatWs || chatWs.readyState !== 1)) chatConnect();
+  if (!chatWs || chatWs.readyState !== 1) { log.textContent = "Chat is offline. Refresh admin after login."; return; }
+  chatWs.send(JSON.stringify({ type: "chat", threadId: openThread, text: text }));
+  log.innerHTML += "<div><b>admin:</b> " + text.replace(/</g,"") + "</div>";
+  input.value = "";
+}
+</script>
+
+</body>
+</html>

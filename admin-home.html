@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — Axia Bank</title>
+  <style>
+    body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f6f1ea;color:#2b211c}
+    header{background:#3b2a22;color:#fff;padding:14px 18px;display:flex;justify-content:space-between;align-items:center}
+    header a{color:#fff;text-decoration:none;margin-left:12px}
+    .wrap{padding:20px}
+    .stats{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+    .stat{background:#fff;border:1px solid #e7ddd3;padding:14px 16px;min-width:140px}
+    .stat b{display:block;font-size:22px;margin-top:4px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .card{background:#fff;border:1px solid #e7ddd3;padding:16px}
+    table{width:100%;border-collapse:collapse;font-size:14px}
+    th,td{padding:8px;border-bottom:1px solid #e7ddd3;text-align:left}
+    button{background:#3b2a22;color:#fff;border:0;padding:6px 10px;cursor:pointer;margin-right:6px}
+    button.light{background:#fff;color:#3b2a22;border:1px solid #e7ddd3}
+    .user{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid #e7ddd3}
+    img,.ph{width:40px;height:40px;border-radius:50%;object-fit:cover;background:#3b2a22;color:#fff;display:flex;align-items:center;justify-content:center}
+    .chat-btn{position:fixed;right:20px;bottom:20px;z-index:50;width:58px;height:58px;border-radius:50%;border:0;background:#3b2a22;color:#fff;cursor:pointer}
+    .inbox{position:fixed;right:20px;bottom:88px;width:340px;max-height:70vh;overflow:auto;background:#fff;border:1px solid #e7ddd3;display:none;z-index:50}
+    .inbox.open{display:block}
+    .inbox h4{background:#3b2a22;color:#fff;margin:0;padding:12px}
+    .msg{padding:10px 12px;border-bottom:1px solid #e7ddd3;display:block;color:inherit;text-decoration:none}
+    .msg small{display:block;color:#7a6a5e}
+    @media(max-width:800px){.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <header>
+    <div>Axia Admin</div>
+    <div>
+      <a href="admin-customers.html">All profiles</a>
+      <a href="admin-chat.html">Messages</a>
+    </div>
+  </header>
+  <div class="wrap">
+    <div class="stats">
+      <div class="stat">Users<b id="cUsers">0</b></div>
+      <div class="stat">Pending requests<b id="cPend">0</b></div>
+      <div class="stat">Approved<b id="cOk">0</b></div>
+    </div>
+    <div class="grid">
+      <div class="card">
+        <h3>Customer profiles</h3>
+        <div id="users">Loading...</div>
+      </div>
+      <div class="card">
+        <h3>Pending transfers / deposits / withdrawals</h3>
+        <table>
+          <thead><tr><th>User</th><th>Type</th><th>Amount</th><th></th></tr></thead>
+          <tbody id="txBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <script>
+    function money(n){ return "$"+Number(n||0).toLocaleString(); }
+    function load(){
+      Promise.all([
+        fetch("/api/users").then(r=>r.json()),
+        fetch("/api/transactions").then(r=>r.json())
+      ]).then(function(res){
+        var users=res[0].users||[];
+        var txs=res[1].transactions||[];
+        document.getElementById("cUsers").textContent=users.length;
+        document.getElementById("cPend").textContent=txs.filter(t=>t.status==="Pending").length;
+        document.getElementById("cOk").textContent=txs.filter(t=>t.status==="Approved").length;
+        var box=document.getElementById("users");
+        box.innerHTML="";
+        users.forEach(function(u){
+          var d=document.createElement("div");
+          d.className="user";
+          var photo=u.profilePic?"<img src='"+u.profilePic+"'>":"<div class='ph'>"+((u.username||"U")[0]||"U").toUpperCase()+"</div>";
+          d.innerHTML=photo+"<div><b>"+(u.firstName||"")+" "+(u.lastName||"")+"</b><br>@"+(u.username||"")+" · "+(u.email||"")+"<br><a href='admin-chat.html'>Open private chat</a></div>";
+          box.appendChild(d);
+        });
+        if(!users.length) box.textContent="No users yet. Students must register on localhost:3000.";
+        var body=document.getElementById("txBody");
+        var pending=txs.filter(t=>t.status==="Pending");
+        body.innerHTML="";
+        pending.forEach(function(t){
+          var tr=document.createElement("tr");
+          tr.innerHTML="<td>"+(t.name||t.email)+"</td><td>"+t.type+"</td><td>"+money(t.amount)+"</td><td></td>";
+          var td=tr.lastChild;
+          var a=document.createElement("button"); a.textContent="Approve";
+          var d=document.createElement("button"); d.textContent="Decline"; d.className="light";
+          a.onclick=function(){ decide(t.id,"Approved"); };
+          d.onclick=function(){ decide(t.id,"Declined"); };
+          td.appendChild(a); td.appendChild(d);
+          body.appendChild(tr);
+        });
+        if(!pending.length) body.innerHTML="<tr><td colspan='4'>No pending requests</td></tr>";
+      }).catch(function(){
+        document.getElementById("users").textContent="Start the server and open http://localhost:3000/admin-home.html";
+      });
+    }
+    function decide(id,status){
+      fetch("/api/transactions/decide",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({id:id,status:status})
+      }).then(load);
+    }
+    load();
+  </script>
+  <button class="chat-btn" id="adminChatBtn">Msgs</button>
+  <div class="inbox" id="inbox">
+    <h4>Messages from users</h4>
+    <div id="inboxList">Loading...</div>
+    <div class="msg"><a href="admin-chat.html">Open full inbox</a></div>
+  </div>
+  <script>
+    document.getElementById("adminChatBtn").onclick=function(){
+      document.getElementById("inbox").classList.toggle("open");
+    };
+    function fillInbox(){
+      var proto=location.protocol==="https:"?"wss://":"ws://";
+      var ws=new WebSocket(proto+location.host+"/chat");
+      ws.onopen=function(){ ws.send(JSON.stringify({type:"join",role:"admin",name:"Axia Admin"})); };
+      ws.onmessage=function(ev){
+        var data=JSON.parse(ev.data);
+        if(data.type==="threads"){
+          var box=document.getElementById("inboxList");
+          if(!data.threads.length){ box.innerHTML="<div class='msg'>No messages yet</div>"; return; }
+          box.innerHTML=data.threads.map(function(t){
+            return "<a class='msg' href='admin-chat.html' style='display:block;text-decoration:none;color:inherit'><b>"+t.id+"</b><small>"+(t.last?t.last.text:"No text")+"</small></a>";
+          }).join("");
+        }
+      };
+    }
+    fillInbox();
+  </script>
+</body>
+</html>

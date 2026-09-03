@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Axia Bank</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, Helvetica, sans-serif; background: #050806; color: #f4f4f4; }
+    .page { max-width: 1180px; margin: 24px auto; background: #0a0f0c; border-radius: 28px; overflow: hidden; border: 1px solid #1a2e24; }
+    .nav { display: flex; align-items: center; justify-content: space-between; padding: 22px 36px; }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 22px; text-decoration: none; color: #fff; }
+    .brand img { width: 42px; height: 42px; object-fit: contain; border-radius: 8px; background: #fff; padding: 3px; }
+    .nav-links { display: flex; gap: 6px; background: #07140f; border-radius: 999px; padding: 6px; }
+    .nav-links a { padding: 8px 16px; border-radius: 999px; font-size: 14px; color: #d7e4dc; text-decoration: none; font-weight: 500; }
+    .nav-links a.on { background: #0b3d2a; color: #fff; font-weight: 700; }
+    .btn-light { border: 1px solid #1f3329; background: #0b3d2a; padding: 10px 18px; border-radius: 999px; font-size: 14px; font-weight: 600; text-decoration: none; color: #fff; }
+    .wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; padding: 28px 48px 48px; align-items: center; }
+    h1 { font-size: 42px; line-height: 1.15; margin-bottom: 16px; }
+    .sub { color: #9aa79f; font-size: 16px; margin-bottom: 28px; max-width: 420px; }
+    .actions { display: flex; gap: 12px; flex-wrap: wrap; }
+    .btn-dark { background: #0b3d2a; color: #fff; text-decoration: none; padding: 14px 22px; border-radius: 999px; font-weight: 700; }
+    .btn-outline { background: transparent; color: #fff; text-decoration: none; padding: 14px 22px; border-radius: 999px; font-weight: 700; border: 1px solid #1f3329; }
+    .art { min-height: 380px; position: relative; }
+    .card { position: absolute; width: 190px; height: 300px; border-radius: 22px; box-shadow: 0 22px 40px rgba(0,0,0,.45); padding: 18px; color: #fff; text-decoration: none; display: flex; flex-direction: column; justify-content: space-between; }
+    .card small { opacity: .85; letter-spacing: .12em; }
+    .chip { width: 36px; height: 26px; border-radius: 6px; background: linear-gradient(135deg,#f3e3a0,#c9a227); }
+    .one { left: 10px; top: 70px; background: linear-gradient(160deg,#8d8d8d,#d9d9d9); color: #222; transform: rotate(-16deg); }
+    .two { left: 86px; top: 28px; background: linear-gradient(160deg,#8a6a22,#e4c56a); color: #2a1d08; transform: rotate(-4deg); }
+    .three { right: 18px; top: 54px; background: linear-gradient(160deg,#03160e,#0b3d2a 55%,#020806); transform: rotate(12deg); }
+    .ticker { background: #050806; color: #8fd4a8; padding: 14px 0; overflow: hidden; white-space: nowrap; font-weight: 700; letter-spacing: .08em; font-size: 14px; }
+    .trusted { text-align: center; padding: 36px 24px 48px; color: #6b736e; font-size: 12px; letter-spacing: .14em; }
+
+    .products { padding: 36px 48px 10px; }
+    .products h2 { font-size: 18px; color: #9aa79f; font-weight: 500; margin-bottom: 8px; }
+    .fdic { color: #8fd4a8; font-size: 13px; margin-bottom: 18px; }
+    .grid4 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .ptile { background: #111a15; border: 1px solid #1f3329; border-radius: 14px; padding: 22px; min-height: 140px; text-decoration: none; color: #fff; display: flex; align-items: center; gap: 16px; }
+    .ptile b { display: block; font-size: 18px; margin-bottom: 6px; }
+    .ptile span { color: #9aa79f; font-size: 14px; }
+    .legal { padding: 28px 48px 16px; color: #9aa79f; font-size: 13px; line-height: 1.55; }
+    .legal h3 { color: #fff; font-size: 15px; margin: 18px 0 8px; }
+    .legal ul { margin: 0 0 12px 18px; }
+    .foot { padding: 18px 48px 36px; border-top: 1px solid #1a2e24; color: #9aa79f; font-size: 12px; }
+    .foot a { color: #8fd4a8; text-decoration: none; margin-right: 14px; display: inline-block; margin-top: 8px; }
+    @media (max-width: 900px) { .products, .legal, .foot { padding-left: 20px; padding-right: 20px; } .grid4 { grid-template-columns: 1fr; } }
+    @media (max-width: 900px) {
+      .wrap { grid-template-columns: 1fr; }
+      .nav-links { display: none; }
+      .art { min-height: 340px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="nav">
+      <a class="brand" href="index.html"><img src="logo.png" alt="Axia"> Axia Bank</a>
+      <nav class="nav-links">
+        <a class="on" href="index.html">Banking</a>
+        <a href="registration.html">Customers</a>
+        <a href="admin-index.html">Partners</a>
+      </nav>
+      <a class="btn-light" href="login.html">Log in</a>
+    </header>
+    <section class="wrap">
+      <div>
+        <h1>Banking built around trust.</h1>
+        <p class="sub">Sign in if you already have an account. New customers create an account, upload ID, then wait for approval.</p>
+        <div class="actions">
+          <a class="btn-dark" href="login.html">Log in</a>
+          <a class="btn-outline" href="registration.html">Create account</a>
+        </div>
+      </div>
+      <div class="art">
+        <a class="card one" href="registration.html">
+          <div><div class="chip"></div></div>
+          <div>AXIA<br><small>SILVER</small></div>
+        </a>
+        <a class="card two" href="registration.html">
+          <div><div class="chip"></div></div>
+          <div>AXIA<br><small>GOLD</small></div>
+        </a>
+        <a class="card three" href="login.html">
+          <div><div class="chip"></div></div>
+          <div>AXIA<br><small>BLACK</small></div>
+        </a>
+      </div>
+    </section>
+    <div class="ticker">SECURE BANKING ✦ VIRTUAL CARDS ✦ GLOBAL TRANSFERS ✦ TRUSTED SUPPORT ✦</div>
+
+    <section class="products">
+      <h2>Axia Bank deposit products:</h2>
+      <p class="fdic">Member FDIC — deposit products are subject to account terms.</p>
+      <div class="grid4">
+        <a class="ptile" href="registration.html">
+          <div>
+            <b>Choose the card that works for you</b>
+            <span>Silver, Gold, and Black virtual cards after approval.</span>
+          </div>
+        </a>
+        <a class="ptile" href="registration.html">
+          <div>
+            <b>Open a savings account</b>
+            <span>Create your Axia profile and wait for admin approval.</span>
+          </div>
+        </a>
+        <a class="ptile" href="login.html">
+          <div>
+            <b>Send money</b>
+            <span>Sign in to transfer between checking and savings.</span>
+          </div>
+        </a>
+        <a class="ptile" href="registration.html">
+          <div>
+            <b>Open an account</b>
+            <span>Register, upload ID, then access your dashboard.</span>
+          </div>
+        </a>
+      </div>
+    </section>
+    <section class="legal" id="legal">
+      <h3>Legal Information and Disclosures</h3>
+      <h3>Investment, Insurance and Annuity Products</h3>
+      <p>Investment, insurance and annuity products:</p>
+      <ul>
+        <li>Are not bank deposits.</li>
+        <li>Are not guaranteed by Axia Bank.</li>
+        <li>May lose value, including loss of principal.</li>
+        <li>Are not insured by the Federal Deposit Insurance Corporation (FDIC), unless specifically stated otherwise.</li>
+        <li>Are not insured by any federal government agency unless expressly indicated.</li>
+        <li>Are not a condition of receiving any banking service or activity.</li>
+      </ul>
+      <p>Investing involves risk. There is always the possibility of losing money when investing in securities. Asset allocation, diversification and rebalancing may help manage investment risk but do not guarantee a profit or protect against loss in declining markets.</p>
+      <h3>Professional Advice</h3>
+      <p>Axia Bank and its affiliates, officers, employees and financial professionals do not provide legal, tax or accounting advice unless specifically authorized to do so. Clients should consult their qualified legal, tax and accounting advisors before making financial or investment decisions.</p>
+      <h3>Investment Services</h3>
+      <p>Axia Bank may offer or make available a range of banking, investment, wealth-management, insurance and related financial services, either directly or through affiliated or third-party service providers. Additional information regarding applicable services, fees, risks, conflicts of interest and regulatory disclosures may be provided in the relevant client agreements and disclosures.</p>
+      <h3>Banking Products</h3>
+      <p>Banking products and services are provided by Axia Bank, subject to applicable account agreements, terms and conditions, and applicable laws and regulations.</p>
+      <p>Certain investment, insurance and annuity products may be offered through separately licensed entities or third-party providers and may be subject to additional terms, conditions and regulatory requirements.</p>
+      <p><b>Important:</b> The availability, insurance coverage and regulatory protections applicable to any product or service depend on the specific product, provider and jurisdiction.</p>
+    </section>
+    <footer class="foot">
+      <div>
+        <a href="registration.html">Browse with Specialist</a>
+        <a href="registration.html">Accessible Banking</a>
+        <a href="dashboard.html">Security</a>
+        <a href="#legal">Privacy</a>
+        <a href="#legal">Children’s Privacy</a>
+        <a href="#legal">Your Privacy Choices</a>
+        <a href="#legal">Ad Choices</a>
+        <a href="#legal">Legal Information &amp; Disclosures</a>
+        <a href="#legal">Equal Housing Lender</a>
+      </div>
+      <p style="margin-top:16px">Axia Bank, N.A. — Member FDIC. © 2026 Axia Bank, N.A. All rights reserved.</p>
+    </footer>
+  </div>
+</body>
+</html>

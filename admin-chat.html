@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Live Chat — Axia Bank</title>
+  <style>
+    body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f6f1ea;color:#2b211c}
+    header{background:#3b2a22;color:#fff;padding:14px 18px;display:flex;justify-content:space-between;align-items:center}
+    header a{color:#fff;text-decoration:none}
+    .wrap{display:grid;grid-template-columns:280px 1fr;height:calc(100vh - 54px)}
+    .list{background:#fff;border-right:1px solid #e7ddd3;overflow:auto}
+    .item{padding:12px 14px;border-bottom:1px solid #e7ddd3;cursor:pointer}
+    .item.active{background:#efe6dc}
+    .item small{display:block;color:#7a6a5e}
+    .chat{display:flex;flex-direction:column}
+    .log{flex:1;overflow:auto;padding:16px}
+    .bubble{max-width:70%;padding:8px 10px;margin:6px 0;font-size:14px}
+    .me{background:#3b2a22;color:#fff;margin-left:auto}
+    .them{background:#fff;border:1px solid #e7ddd3}
+    form{display:flex;gap:8px;padding:12px;background:#fff;border-top:1px solid #e7ddd3}
+    input{flex:1;padding:10px;border:1px solid #e7ddd3}
+    button{background:#3b2a22;color:#fff;border:0;padding:10px 16px;cursor:pointer}
+    #status{font-size:13px}
+  </style>
+</head>
+<body>
+  <header>
+    <div>Axia Admin Live Chat</div>
+    <div><span id="status">Connecting...</span> · <a href="admin-dashboard.html">Dashboard</a></div>
+  </header>
+  <div class="wrap">
+    <aside class="list" id="list"><div class="item">No conversations yet</div></aside>
+    <section class="chat">
+      <div class="log" id="log"></div>
+      <form id="form">
+        <input id="text" placeholder="Reply to customer">
+        <button type="submit">Send</button>
+      </form>
+    </section>
+  </div>
+  <script>
+    var ws, current = null;
+    var statusEl = document.getElementById("status");
+    function connect() {
+      var proto = location.protocol === "https:" ? "wss://" : "ws://";
+      ws = new WebSocket(proto + location.host + "/chat");
+      ws.onopen = function() {
+        statusEl.textContent = "Live";
+        ws.send(JSON.stringify({ type: "join", role: "admin", name: "Axia Admin" }));
+      };
+      ws.onclose = function() {
+        statusEl.textContent = "Offline — retrying";
+        setTimeout(connect, 1500);
+      };
+      ws.onmessage = function(ev) {
+        var data = JSON.parse(ev.data);
+        if (data.type === "threads") renderList(data.threads);
+        if (data.type === "history") {
+          current = data.threadId;
+          renderLog(data.messages || []);
+        }
+        if (data.type === "message") {
+          if (data.threadId === current) addBubble(data.message);
+        }
+      };
+    }
+    function renderList(threads) {
+      var list = document.getElementById("list");
+      if (!threads.length) { list.innerHTML = '<div class="item">No conversations yet</div>'; return; }
+      list.innerHTML = "";
+      threads.forEach(function(t) {
+        var d = document.createElement("div");
+        d.className = "item" + (t.id === current ? " active" : "");
+        d.innerHTML = "<b>" + t.id + "</b><small>" + (t.last ? t.last.text : "No messages") + "</small>";
+        d.onclick = function() {
+          current = t.id;
+          ws.send(JSON.stringify({ type: "open", threadId: t.id }));
+          renderList(threads);
+        };
+        list.appendChild(d);
+      });
+    }
+    function renderLog(messages) {
+      document.getElementById("log").innerHTML = "";
+      messages.forEach(addBubble);
+    }
+    function addBubble(m) {
+      var d = document.createElement("div");
+      d.className = "bubble " + (m.from === "admin" ? "me" : "them");
+      d.textContent = (m.name || m.from) + ": " + m.text;
+      document.getElementById("log").appendChild(d);
+      document.getElementById("log").scrollTop = 99999;
+    }
+    document.getElementById("form").onsubmit = function(e) {
+      e.preventDefault();
+      var text = document.getElementById("text").value.trim();
+      if (!text || !current || !ws || ws.readyState !== 1) return;
+      ws.send(JSON.stringify({ type: "chat", threadId: current, text: text }));
+      document.getElementById("text").value = "";
+    };
+    connect();
+  </script>
+</body>
+</html>

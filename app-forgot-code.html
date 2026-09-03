@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enter code — Axia Bank</title>
+  <style>
+    body { font-family: Arial, Helvetica, sans-serif; background:#050806; color:#f4f4f4; margin:0; }
+    a { color:#8fd4a8; }
+    .page { max-width:520px; margin:48px auto; background:#0a0f0c; border:1px solid #1a2e24; border-radius:24px; padding:36px; }
+    .brand { display:flex; align-items:center; gap:10px; font-weight:700; font-size:20px; text-decoration:none; color:#fff; margin-bottom:24px; }
+    .brand img { width:42px; height:42px; object-fit:contain; background:#fff; border-radius:8px; padding:3px; }
+    h1 { font-size:28px; margin:0 0 8px; }
+    .sub { color:#9aa79f; margin-bottom:22px; }
+    label { display:block; font-size:14px; font-weight:600; margin:14px 0 8px; }
+    input { width:100%; padding:12px 14px; border:1px solid #1f3329; border-radius:14px; font-size:15px; background:#07140f; color:#fff; box-sizing:border-box; }
+    .btn { width:100%; margin-top:18px; background:#0b3d2a; color:#fff; border:0; padding:14px; border-radius:999px; font-size:15px; font-weight:700; cursor:pointer; }
+    .err { color:#ffb4b4; min-height:18px; margin-top:10px; font-size:13px; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <a class="brand" href="index.html"><img src="logo.png" alt=""> Axia Bank</a>
+    
+    <h1>Enter the code</h1>
+    <p class="sub">Type the 6-digit code sent for this account.</p>
+    <form id="f">
+      <label>Reset code</label>
+      <input id="code" inputmode="numeric" maxlength="6" placeholder="6-digit code" required>
+      <p class="err" id="err"></p>
+      <button class="btn" type="submit">Continue</button>
+    </form>
+    <p style="margin-top:18px"><a href="app-forgot.html">Back</a></p>
+
+  </div>
+  <script>
+  
+    if (!localStorage.getItem("axia_reset_email")) location.href = "app-forgot.html";
+    document.getElementById("f").onsubmit = function (e) {
+      e.preventDefault();
+      var email = localStorage.getItem("axia_reset_email");
+      var code = document.getElementById("code").value.trim();
+      var err = document.getElementById("err");
+      fetch("/api/auth/reset-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email, code: code })
+      }).then(function (r) { return r.json(); }).then(function (d) {
+        if (d.error) { err.textContent = d.error; return; }
+        localStorage.setItem("axia_reset_ok", "1");
+        localStorage.setItem("axia_reset_code", code);
+        location.href = "app-forgot-password.html";
+      }).catch(function () { err.textContent = "Server not running"; });
+    };
+
+  </script>
+</body>
+</html>

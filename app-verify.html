@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Identity verification — Axia Bank</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, Helvetica, sans-serif; background: #f6f1ea; color: #2b211c; }
+    .top { height: 64px; background: #fff; border-bottom: 1px solid #e7ddd3; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; color: #3b2a22; text-decoration: none; }
+    .brand img { height: 28px; width: 28px; object-fit: contain; }
+    .wrap { max-width: 560px; margin: 36px auto; background: #fff; padding: 32px; border: 1px solid #e7ddd3; border-radius: 16px; }
+    h1 { font-size: 26px; margin-bottom: 8px; }
+    .sub { color: #7a6a5e; margin-bottom: 22px; }
+    label { display: block; font-size: 13px; color: #7a6a5e; margin-top: 12px; }
+    input[type="text"], input:not([type="file"]):not([type="checkbox"]) { width: 100%; padding: 11px; border: 1px solid #e7ddd3; border-radius: 8px; margin-top: 4px; }
+    .drop { border: 1px dashed #e7ddd3; border-radius: 10px; padding: 14px; margin-top: 6px; background: #f6f1ea; }
+    .btn { width: 100%; margin-top: 18px; padding: 13px; background: #3b2a22; color: #fff; border: 0; border-radius: 24px; cursor: pointer; font-size: 15px; }
+    .err { color: #8a2b2b; min-height: 18px; margin-top: 8px; font-size: 13px; }
+    a { color: #3b2a22; }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <a class="brand" href="index.html"><img src="logo.png" alt="">AXIA BANK</a>
+    <a href="login.html">Login</a>
+  </header>
+  <div class="wrap">
+    <h1>Identity verification</h1>
+    <p class="sub">Upload your ID and enter your Social Security Number to finish opening the account.</p>
+    <label>ID front</label>
+    <div class="drop"><input id="front" type="file" accept="image/*"></div>
+    <label>ID back</label>
+    <div class="drop"><input id="back" type="file" accept="image/*"></div>
+    <label>Social Security Number</label>
+    <input id="ssn" type="text" inputmode="numeric" maxlength="11" placeholder="Social Security Number">
+    <label style="margin-top:16px"><input id="agree" type="checkbox"> I confirm this information is correct.</label>
+    <p class="err" id="err"></p>
+    <button class="btn" type="button" id="go">Submit full registration</button>
+    <p style="margin-top:14px;font-size:13px"><a href="registration.html">Back to registration</a></p>
+  </div>
+  <script>
+    if (!localStorage.getItem("axia_apply_token")) location.href = "registration.html";
+    var front = "", back = "";
+    function readPic(input, which) {
+      var f = input.files[0];
+      if (!f) return;
+      if (f.size > 1500000) { document.getElementById("err").textContent = "Image is too large"; return; }
+      var r = new FileReader();
+      r.onload = function (e) {
+        if (which === "front") front = e.target.result;
+        else back = e.target.result;
+        document.getElementById("err").textContent = "";
+      };
+      r.readAsDataURL(f);
+    }
+    document.getElementById("front").onchange = function () { readPic(this, "front"); };
+    document.getElementById("back").onchange = function () { readPic(this, "back"); };
+    document.getElementById("go").onclick = function () {
+      var err = document.getElementById("err");
+      var ssn = document.getElementById("ssn").value.replace(/\D/g, "");
+      if (!document.getElementById("agree").checked) { err.textContent = "Confirm the information is correct"; return; }
+      if (ssn.length !== 9) { err.textContent = "Enter a 9-digit Social Security Number"; return; }
+      if (!front) { err.textContent = "Upload the front of your ID"; return; }
+      err.textContent = "Submitting…";
+      fetch("/api/auth/kyc", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          apply_token: localStorage.getItem("axia_apply_token"),
+          ssn: ssn,
+          id_front: front,
+          id_back: back
+        })
+      }).then(function (r) { return r.json(); }).then(function (d) {
+        if (d.error) { err.textContent = d.error; return; }
+        location.href = "app-pending.html";
+      }).catch(function () {
+        err.textContent = "Open http://localhost:3000/registration.html after starting the server";
+      });
+    };
+  </script>
+</body>
+</html>

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create account — Axia</title>
+  <link rel="stylesheet" href="css/axia-neo.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand"><img src="logo.png" alt="">AXIA BANK</div>
+    <nav><a href="index.html">Home</a><a href="app-login.html">Login</a></nav>
+  </header>
+  <div class="wrap">
+    <div class="form-col">
+      <h1>Create your complete Axia profile</h1>
+      <p class="sub">Step 1 of 2. Next you will upload ID and SSN.</p>
+      <div class="sec">Account credentials</div>
+      <label>Email</label><input id="email" type="email">
+      <div class="row">
+        <div><label>Password</label><input id="password" type="password"></div>
+        <div><label>Confirm password</label><input id="password2" type="password"></div>
+      </div>
+      <div class="sec">Personal information</div>
+      <div class="row">
+        <div><label>First name</label><input id="first_name"></div>
+        <div><label>Last name</label><input id="last_name"></div>
+      </div>
+      <div class="row">
+        <div><label>Username</label><input id="username"></div>
+        <div><label>Date of birth</label><input id="dob" type="date"></div>
+      </div>
+      <div class="row">
+        <div><label>Nationality</label><input id="country" placeholder="Country"></div>
+        <div><label>Phone</label><input id="phone"></div>
+      </div>
+      <div class="sec">Financial profile</div>
+      <div class="row">
+        <div>
+          <label>Employment status</label>
+          <select id="employment"><option>Employed</option><option>Student</option><option>Self-employed</option><option>Unemployed</option></select>
+        </div>
+        <div>
+          <label>Reason for opening</label>
+          <select id="reason"><option>Everyday banking</option><option>Savings</option><option>Class project</option></select>
+        </div>
+      </div>
+      <label>Profile picture</label><input id="photo" type="file" accept="image/*">
+      <div class="sec">Create PIN</div>
+      <div class="row">
+        <div><label>PIN (4-6 digits)</label><input id="pin" type="password" inputmode="numeric" maxlength="6"></div>
+        <div><label>Confirm PIN</label><input id="pin_confirm" type="password" inputmode="numeric" maxlength="6"></div>
+      </div>
+      <p class="err" id="err"></p>
+      <button class="btn" type="button" id="go">Continue to ID upload</button>
+    </div>
+    <div class="art"><div class="art-card"><b>AXIA</b><p>Create account → ID & SSN → Admin review</p></div></div>
+  </div>
+  <script>
+    var pic = "";
+    document.getElementById("photo").onchange = function () {
+      var f = this.files[0]; if (!f) return;
+      if (f.size > 700000) { document.getElementById("err").textContent = "Photo too large"; return; }
+      var r = new FileReader(); r.onload = function (e) { pic = e.target.result; }; r.readAsDataURL(f);
+    };
+    function v(id){ return document.getElementById(id).value.trim(); }
+    document.getElementById("go").onclick = function () {
+      if (v("password") !== v("password2")) { document.getElementById("err").textContent = "Passwords do not match"; return; }
+      fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: v("email"), password: v("password"), first_name: v("first_name"), last_name: v("last_name"),
+          username: v("username"), country: v("country"), phone: v("phone"), employment: v("employment"),
+          pin: v("pin"), pin_confirm: v("pin_confirm"), profile_pic: pic, dob: v("dob")
+        })
+      }).then(function (r) { return r.json(); }).then(function (d) {
+        if (d.error) { document.getElementById("err").textContent = d.error; return; }
+        localStorage.setItem("axia_apply_token", d.apply_token);
+        location.href = "app-verify.html";
+      }).catch(function () { document.getElementById("err").textContent = "Start the server first"; });
+    };
+  </script>
+</body>
+</html>

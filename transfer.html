@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transfer — Axia Bank</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+  <div class="dashboard-layout">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <img src="logo.png" alt="Axia Bank">
+        <div>
+          <h1>Axia Bank</h1>
+          <span>Personal Banking</span>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <div class="nav-section-title">Main</div>
+          <a href="dashboard.html" class="nav-item">Dashboard</a>
+          <a href="funds.html" class="nav-item">Funds</a>
+          <a href="transfer.html" class="nav-item active">Transfers</a>
+          <a href="withdrawal.html" class="nav-item">Withdrawals</a>
+          <a href="transactions.html" class="nav-item">Transactions</a>
+        </div>
+      </nav>
+    </aside>
+
+    <div class="main-content">
+      <header class="topbar">
+        <div class="topbar-left">
+          <h2>Transfer money</h2>
+          <p>Send funds internally or to another person</p>
+        </div>
+        <div class="topbar-right">
+          <button class="btn btn-outline btn-sm" onclick="logout()">Logout</button>
+        </div>
+      </header>
+
+      <div class="page-content">
+        <div class="card" style="max-width: 560px;">
+          <div class="card-header">
+            <h3 class="card-title">New transfer</h3>
+          </div>
+          <div class="card-body">
+            <div id="formAlert" style="display:none;"></div>
+            <form id="transferForm">
+              <div class="form-group">
+                <label class="form-label">From account</label>
+                <select id="fromAccount" class="form-control">
+                  <option value="checking">Checking</option>
+                  <option value="savings">Savings</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Recipient name or account</label>
+                <input id="recipient" class="form-control" placeholder="Sarah Miller or •••• 3391" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Amount</label>
+                <input id="amount" type="number" min="1" step="0.01" class="form-control" placeholder="0.00" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Note (optional)</label>
+                <input id="note" class="form-control" placeholder="Rent, gift, etc.">
+              </div>
+              <button class="btn btn-primary" type="submit">Submit transfer</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="js/app.js"></script>
+</body>
+</html>

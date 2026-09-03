@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transactions — Axia Bank</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+  <div class="dashboard-layout">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <img src="logo.png" alt="Axia Bank">
+        <div>
+          <h1>Axia Bank</h1>
+          <span>Personal Banking</span>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <div class="nav-section-title">Main</div>
+          <a href="dashboard.html" class="nav-item">Dashboard</a>
+          <a href="funds.html" class="nav-item">Funds</a>
+          <a href="transfer.html" class="nav-item">Transfers</a>
+          <a href="withdrawal.html" class="nav-item">Withdrawals</a>
+          <a href="transactions.html" class="nav-item active">Transactions</a>
+        </div>
+      </nav>
+    </aside>
+
+    <div class="main-content">
+      <header class="topbar">
+        <div class="topbar-left">
+          <h2>Transactions</h2>
+          <p>Your recent activity</p>
+        </div>
+        <div class="topbar-right">
+          <button class="btn btn-outline btn-sm" onclick="logout()">Logout</button>
+        </div>
+      </header>
+
+      <div class="page-content">
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">History</h3>
+          </div>
+          <div class="card-body" style="padding:0;">
+            <div class="table-container">
+              <table>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Description</th>
+                    <th>Type</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                  </tr>
+                </thead>
+                <tbody id="txBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="js/app.js"></script>
+  <script>
+    requireLogin();
+    const user = currentUser();
+    const rows = getTransactions().filter(t => !user || t.email === user.email);
+    const body = document.getElementById("txBody");
+    if (!rows.length) {
+      body.innerHTML = '<tr><td colspan="6" class="text-muted">No transactions yet.</td></tr>';
+    } else {
+      body.innerHTML = rows.map(t => `
+        <tr>
+          <td class="text-muted">${t.id}</td>
+          <td class="font-medium">${t.description}</td>
+          <td>${t.type}</td>
+          <td class="${t.amount < 0 ? "text-danger" : "text-success"}">${formatMoney(t.amount)}</td>
+          <td>${t.status}</td>
+          <td class="text-muted">${new Date(t.createdAt).toLocaleDateString()}</td>
+        </tr>
+      `).join("");
+    }
+  </script>
+</body>
+</html>

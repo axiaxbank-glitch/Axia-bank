@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Account — Axia Bank</title>
+  
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, Helvetica, sans-serif; background: #050806; color: #f4f4f4; }
+    a { color: #8fd4a8; }
+    .page { max-width: 1180px; margin: 24px auto; background: #0a0f0c; border-radius: 28px; overflow: hidden; border: 1px solid #1a2e24; }
+    .nav { display: flex; align-items: center; justify-content: space-between; padding: 22px 36px; }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 22px; text-decoration: none; color: #fff; }
+    .brand img { width: 42px; height: 42px; object-fit: contain; border-radius: 8px; background: #fff; padding: 3px; }
+    .wrap { display: grid; grid-template-columns: 1.15fr .85fr; gap: 32px; padding: 10px 40px 40px; }
+    h1 { font-size: 30px; margin: 0 0 16px; }
+    .section-title { font-size: 15px; font-weight: 700; margin: 18px 0 10px; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .box { border: 1px solid #1f3329; border-radius: 14px; padding: 12px 14px; background: #07140f; }
+    .box select, .box input { border: none; outline: none; width: 100%; font-size: 14px; font-family: inherit; background: transparent; color: #fff; }
+    .upload { border: 1px dashed #2a4a3a; border-radius: 16px; padding: 22px; text-align: center; color: #9aa79f; display: block; cursor: pointer; }
+    .hint { font-size: 12px; color: #9aa79f; margin: 8px 0 0; }
+    .check { display: flex; gap: 10px; font-size: 13px; margin: 16px 0 18px; }
+    .btn-dark { width: 100%; background: #0b3d2a; color: #fff; border: none; padding: 16px; border-radius: 999px; font-size: 15px; font-weight: 600; cursor: pointer; }
+    .art { min-height: 420px; position: relative; }
+    .card { position: absolute; width: 170px; height: 260px; border-radius: 20px; box-shadow: 0 22px 40px rgba(0,0,0,.45); padding: 16px; color: #fff; display: flex; flex-direction: column; justify-content: space-between; }
+    .chip { width: 34px; height: 24px; border-radius: 6px; background: linear-gradient(135deg,#f3e3a0,#c9a227); }
+    .one { left: 10px; top: 90px; background: linear-gradient(160deg,#8d8d8d,#d9d9d9); color: #222; transform: rotate(-16deg); }
+    .two { left: 80px; top: 50px; background: linear-gradient(160deg,#8a6a22,#e4c56a); color: #2a1d08; transform: rotate(-4deg); }
+    .three { right: 10px; top: 70px; background: linear-gradient(160deg,#03160e,#0b3d2a 55%,#020806); transform: rotate(12deg); }
+    #formAlert { display: none; margin-bottom: 14px; padding: 10px 12px; border-radius: 10px; font-size: 13px; background: #3a1515; color: #ffb4b4; }
+    @media (max-width: 900px) { .wrap, .row { grid-template-columns: 1fr; } .art { display: none; } }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="nav">
+      <a class='brand' href='/'><img src="logo.png" alt="Axia"> Axia Bank</a>
+      <a href='/login' style='color:#fff;text-decoration:none'>Sign in</a>
+    </header>
+    <section class="wrap">
+      <div>
+        <h1>Create your Axia profile</h1>
+        <div id="formAlert"></div>
+        <div class="section-title">Account</div>
+        <div class="row">
+          <div class="box"><input id="username" placeholder="Username"></div>
+          <div class="box"><input id="email" placeholder="Email"></div>
+        </div>
+        <div class="row" style="margin-top:12px;">
+          <div class="box"><input id="password" type="password" placeholder="Password"></div>
+          <div class="box"><input id="confirmPassword" type="password" placeholder="Confirm password"></div>
+        </div>
+        <div class="row" style="margin-top:12px;">
+          <div class="box"><input id="pin" type="password" inputmode="numeric" maxlength="6" placeholder="PIN 4-6 digits"></div>
+          <div class="box"><input id="pin2" type="password" inputmode="numeric" maxlength="6" placeholder="Confirm PIN"></div>
+        </div>
+        <div class="box" style="margin-top:12px;"><input id="phone" type="tel" placeholder="10-digit phone number" required></div>
+        <div class="section-title">Account type</div>
+        <div class="box"><select id="accountType">
+          <option value="">Select account type</option>
+          <option value="checking">Personal Checking</option>
+          <option value="savings">Personal Savings</option>
+          <option value="both">Checking and Savings</option>
+          <option value="business">Business Checking</option>
+        </select></div>
+        <div class="section-title">Address details</div>
+        <div class="box"><select id="country"></select></div>
+        <div class="box" style="margin-top:12px;"><select id="state"></select></div>
+        <div class="box" style="margin-top:12px;display:none" id="stateTextWrap"><input id="stateText" placeholder="State / Province"></div>
+        <div class="box" style="margin-top:12px;"><select id="city"></select></div>
+        <div class="box" style="margin-top:12px;display:none" id="cityTextWrap"><input id="cityText" placeholder="City"></div>
+        <div class="box" style="margin-top:12px;"><input id="postal" placeholder="Postal / ZIP code"></div>
+        <div class="section-title">Profile picture</div>
+        <label class="upload">Upload profile picture<input id="profilePic" type="file" accept="image/*" style="display:none"></label>
+        <p class="hint" id="profilePicName">Not uploaded</p>
+        <div class="section-title">Personal</div>
+        <div class="row">
+          <div class="box"><input id="firstName" placeholder="First name"></div>
+          <div class="box"><input id="lastName" placeholder="Last name"></div>
+        </div>
+        <div class="box" style="margin-top:12px;"><input id="address" placeholder="Home address"></div>
+        <div class="box" style="margin-top:12px;"><input id="dob" type="date" placeholder="Date of birth"></div>
+        <div class="section-title">Front of ID</div>
+        <label class="upload">Upload front of ID<input id="idFront" type="file" accept="image/*" style="display:none"></label>
+        <p class="hint" id="idFrontName">Not uploaded</p>
+        <div class="section-title">Back of ID</div>
+        <label class="upload">Upload back of ID<input id="idBack" type="file" accept="image/*" style="display:none"></label>
+        <p class="hint" id="idBackName">Not uploaded</p>
+        <div class="section-title">Social Security Number</div>
+        <div class="box"><input id="ssn" placeholder="Social Security Number"></div>
+        <label class="check"><input id="agree" type="checkbox"><span>I confirm this information is correct.</span></label>
+        <button class="btn-dark" type="button" id="go">Submit Full Registration</button>
+      </div>
+      <div class="art">
+        <div class="card one"><div class="chip"></div><div>AXIA<br><small>SILVER</small></div></div>
+        <div class="card two"><div class="chip"></div><div>AXIA<br><small>GOLD</small></div></div>
+        <div class="card three"><div class="chip"></div><div>AXIA<br><small>BLACK</small></div></div>
+      </div>
+    </section>
+  </div>
+  <script>
+    function show(msg) {
+      var el = document.getElementById("formAlert");
+      el.style.display = "block";
+      el.textContent = msg;
+    }
+    function readFile(file) {
+      return new Promise(function (resolve, reject) {
+        var r = new FileReader();
+        r.onload = function (e) { resolve(e.target.result); };
+        r.onerror = reject;
+        r.readAsDataURL(file);
+      });
+    }
+    
+    function fillSelect(id, items, first) {
+      var el = document.getElementById(id);
+      el.innerHTML = "";
+      var o = document.createElement("option");
+      o.value = ""; o.textContent = first;
+      el.appendChild(o);
+      items.forEach(function (n) {
+        var x = document.createElement("option");
+        x.value = n; x.textContent = n;
+        el.appendChild(x);
+      });
+    }
+    var countries = ["United States","Canada","United Kingdom","Nigeria","Ghana","India","Mexico","Afghanistan","Albania","Algeria","Argentina","Australia","Austria","Bahamas","Bangladesh","Barbados","Belgium","Brazil","Cameroon","Chile","China","Colombia","Denmark","Egypt","Ethiopia","Finland","France","Germany","Greece","Haiti","Hungary","Indonesia","Ireland","Israel","Italy","Jamaica","Japan","Kenya","Liberia","Malaysia","Morocco","Netherlands","New Zealand","Norway","Pakistan","Philippines","Poland","Portugal","Qatar","Romania","Russia","Saudi Arabia","Senegal","Singapore","South Africa","South Korea","Spain","Sweden","Switzerland","Tanzania","Thailand","Turkey","Uganda","Ukraine","United Arab Emirates","Vietnam","Zambia","Zimbabwe","Other"];
+    fillSelect("country", countries, "Select country");
+    document.getElementById("state").parentNode.style.display = "none";
+    document.getElementById("city").parentNode.style.display = "none";
+    document.getElementById("stateTextWrap").style.display = "block";
+    document.getElementById("cityTextWrap").style.display = "block";
+    document.getElementById("country").onchange = function () {
+      document.getElementById("state").parentNode.style.display = "none";
+      document.getElementById("city").parentNode.style.display = "none";
+      document.getElementById("stateTextWrap").style.display = "block";
+      document.getElementById("cityTextWrap").style.display = "block";
+    };
+    document.getElementById("profilePic").onchange = function () {
+      document.getElementById("profilePicName").textContent = this.files[0] ? "Uploaded" : "Not uploaded";
+    };
+    document.getElementById("idFront").onchange = function () {
+      document.getElementById("idFrontName").textContent = this.files[0] ? "Uploaded" : "Not uploaded";
+    };
+    document.getElementById("idBack").onchange = function () {
+      document.getElementById("idBackName").textContent = this.files[0] ? "Uploaded" : "Not uploaded";
+    };
+    document.getElementById("go").onclick = function () {
+      var username = document.getElementById("username").value.trim();
+      var email = document.getElementById("email").value.trim();
+      var password = document.getElementById("password").value;
+      var pin = document.getElementById("pin").value;
+      var ssn = document.getElementById("ssn").value.replace(/\D/g, "");
+      var front = document.getElementById("idFront").files[0];
+      var back = document.getElementById("idBack").files[0];
+      var first = document.getElementById("firstName").value.trim();
+      var last = document.getElementById("lastName").value.trim();
+      var phone = document.getElementById("phone").value.trim();
+      var address = document.getElementById("address").value.trim();
+      var dob = document.getElementById("dob").value;
+      if (!/^[a-zA-Z0-9._]{3,20}$/.test(username)) return show("Username must be 3-20 letters, numbers, . or _");
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return show("Enter a valid email");
+      if (password.length < 8 || !/[A-Za-z]/.test(password) || !/\d/.test(password)) return show("Password must be 8+ characters and include a letter and a number");
+      if (password !== document.getElementById("confirmPassword").value) return show("Passwords do not match");
+      if (!/^\d{4,6}$/.test(pin)) return show("PIN must be 4 to 6 digits");
+      if (pin !== document.getElementById("pin2").value) return show("PINs do not match");
+      var digits = phone.replace(/\D/g, "");
+      if (digits.length !== 10) return show("Phone number must be 10 digits");
+      if (!/^[a-zA-Z][a-zA-Z\s'\-]{1,39}$/.test(first)) return show("Enter a valid first name");
+      if (!/^[a-zA-Z][a-zA-Z\s'\-]{1,39}$/.test(last)) return show("Enter a valid last name");
+      if (!document.getElementById("accountType").value) return show("Select account type");
+      var country = document.getElementById("country").value;
+      if (!country) return show("Select country");
+      var state = document.getElementById("state").value || document.getElementById("stateText").value.trim();
+      if (!state) return show("Select or enter state");
+      var city = document.getElementById("city").value;
+      if (city === "Other") city = document.getElementById("cityText").value.trim();
+      if (!city) city = document.getElementById("cityText").value.trim();
+      if (!city) return show("Select or enter city");
+      var postal = document.getElementById("postal").value.trim();
+      if (!postal) return show("Enter postal code");
+      if (country === "United States" && !/^\d{5}$/.test(postal)) return show("US ZIP code must be 5 digits");
+      if (!address) return show("Enter home address");
+      if (!dob) return show("Enter date of birth");
+      var age = (Date.now() - new Date(dob).getTime()) / (365.25*24*60*60*1000);
+      if (!(age >= 18 && age < 120)) return show("You must be 18 or older");
+      if (!front) return show("Upload the front of your ID");
+      if (!back) return show("Upload the back of your ID");
+      if (ssn.length !== 9) return show("Enter a 9-digit Social Security Number");
+      if (!document.getElementById("agree").checked) return show("Confirm the information is correct");
+      show("Submitting…");
+      var picFile = document.getElementById("profilePic").files[0];
+      var reads = [readFile(front), readFile(back)];
+      if (picFile) reads.push(readFile(picFile));
+      Promise.all(reads).then(function (pics) {
+        return fetch("/api/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: email,
+            username: username,
+            password: password,
+            first_name: document.getElementById("firstName").value.trim(),
+            last_name: document.getElementById("lastName").value.trim(),
+            phone: document.getElementById("phone").value.trim(),
+            address: document.getElementById("address").value.trim(),
+            country: document.getElementById("country").value,
+            state: document.getElementById("state").value || document.getElementById("stateText").value.trim(),
+            city: (document.getElementById("city").value === "Other" ? document.getElementById("cityText").value.trim() : document.getElementById("city").value) || document.getElementById("cityText").value.trim(),
+            postal_code: document.getElementById("postal").value.trim(),
+            account_type: document.getElementById("accountType").value,
+            dob: document.getElementById("dob").value,
+            pin: pin,
+            pin_confirm: pin,
+            profile_pic: pics[2] || ""
+          })
+        }).then(function (r) { return r.json(); }).then(function (d) {
+          if (d.error) throw new Error(d.error);
+          localStorage.setItem("axia_apply_token", d.apply_token);
+          return fetch("/api/auth/kyc", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              apply_token: d.apply_token,
+              ssn: ssn,
+              id_front: pics[0],
+              id_back: pics[1]
+            })
+          });
+        }).then(function (r) { return r.json(); }).then(function (d) {
+          if (d.error) throw new Error(d.error);
+          location.href = "app-pending.html";
+        });
+      }).catch(function (e) {
+        show(e && e.message ? e.message : "Open http://localhost:3000/registration.html after starting the server");
+      });
+    };
+  </script>
+</body>
+</html>

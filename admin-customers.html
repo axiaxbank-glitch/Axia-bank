@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customers — Axia Admin</title>
+  <style>
+    body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f6f1ea;color:#2b211c}
+    header{background:#3b2a22;color:#fff;padding:14px 18px;display:flex;justify-content:space-between;align-items:center}
+    header a{color:#fff;text-decoration:none;margin-left:12px}
+    .wrap{padding:20px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+    .card{background:#fff;border:1px solid #e7ddd3;padding:16px}
+    .top{display:flex;gap:12px;align-items:center;margin-bottom:10px}
+    img,.ph{width:52px;height:52px;border-radius:50%;object-fit:cover;background:#3b2a22;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700}
+    small{color:#7a6a5e}
+    h3{margin:0 0 4px}
+  </style>
+</head>
+<body>
+  <header>
+    <div>Axia Admin — Customer profiles</div>
+    <div>
+      <a href="admin-dashboard.html">Dashboard</a>
+      <a href="admin-chat.html">Live chat</a>
+    </div>
+  </header>
+  <div class="wrap">
+    <p id="count">Loading students...</p>
+    <div class="grid" id="grid"></div>
+  </div>
+  <script>
+    fetch("/api/users").then(function(r){ return r.json(); }).then(function(data){
+      var users = data.users || [];
+      document.getElementById("count").textContent = users.length + " registered user(s)";
+      var grid = document.getElementById("grid");
+      if (!users.length) {
+        grid.innerHTML = "<div class='card'>No students yet. They must register at http://localhost:3000/registration.html while this server is running.</div>";
+        return;
+      }
+      users.forEach(function(u){
+        var card = document.createElement("div");
+        card.className = "card";
+        var photo = u.profilePic
+          ? "<img src='"+u.profilePic+"' alt=''>"
+          : "<div class='ph'>"+((u.username||u.firstName||"U").charAt(0).toUpperCase())+"</div>";
+        card.innerHTML =
+          "<div class='top'>"+photo+"<div><h3>"+(u.firstName||"")+" "+(u.lastName||"")+"</h3><small>@"+(u.username||"")+"</small></div></div>"+
+          "<div>"+(u.email||"")+"</div>"+
+          "<div>"+(u.phone||"")+"</div>"+
+          "<div>"+(u.address||"")+"</div>"+
+          "<div>"+(u.country||"")+" · "+(u.accountType||"")+"</div>"+
+          "<small>Checking $"+Number(u.checking||0).toLocaleString()+" · Savings $"+Number(u.savings||0).toLocaleString()+"</small>";
+        grid.appendChild(card);
+      });
+    }).catch(function(){
+      document.getElementById("count").textContent = "Could not load users. Start the server with npm start and open this page at http://localhost:3000/admin-customers.html";
+    });
+  </script>
+</body>
+</html>
