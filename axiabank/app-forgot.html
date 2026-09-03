@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forgot Password — Axia Bank</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, Helvetica, sans-serif; background: #050806; color: #f4f4f4; }
+    a { color: #8fd4a8; }
+    .page { max-width: 1180px; margin: 24px auto; background: #0a0f0c; border-radius: 28px; overflow: hidden; border: 1px solid #1a2e24; }
+    .nav { display: flex; align-items: center; justify-content: space-between; padding: 22px 36px; }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 22px; text-decoration: none; color: #fff; }
+    .brand img { width: 42px; height: 42px; object-fit: contain; border-radius: 8px; background: #fff; padding: 3px; }
+    .wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; padding: 20px 48px 48px; align-items: center; }
+    h1 { font-size: 32px; margin: 0 0 8px; }
+    .sub { color: #9aa79f; font-size: 14px; line-height: 1.5; margin-bottom: 22px; }
+    label { display: block; font-size: 14px; font-weight: 600; margin: 14px 0 8px; }
+    .input-box { display: flex; align-items: center; border: 1px solid #1f3329; border-radius: 14px; padding: 12px 14px; background: #07140f; }
+    .input-box input { border: 0; outline: 0; width: 100%; font-size: 15px; background: transparent; color: #fff; font-family: inherit; }
+    .btn { width: 100%; margin-top: 18px; background: #0b3d2a; color: #fff; border: 0; padding: 16px; border-radius: 999px; font-size: 15px; font-weight: 700; cursor: pointer; }
+    .art { min-height: 360px; position: relative; }
+    .card { position: absolute; width: 170px; height: 260px; border-radius: 20px; padding: 16px; color: #fff; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 22px 40px rgba(0,0,0,.45); }
+    .one { left: 16px; top: 70px; background: linear-gradient(160deg,#8d8d8d,#d9d9d9); color: #222; transform: rotate(-16deg); }
+    .two { left: 88px; top: 30px; background: linear-gradient(160deg,#8a6a22,#e4c56a); color: #2a1d08; transform: rotate(-4deg); }
+    .three { right: 16px; top: 54px; background: linear-gradient(160deg,#03160e,#0b3d2a 55%,#020806); transform: rotate(12deg); }
+    #msg { min-height: 18px; margin-top: 12px; font-size: 13px; color: #9aa79f; }
+    #msg.err { color: #ffb4b4; }
+    #msg.ok { color: #8fd4a8; }
+    .back { display: inline-block; margin-top: 16px; font-size: 14px; }
+    @media (max-width: 900px) { .wrap { grid-template-columns: 1fr; } .art { display: none; } }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="nav">
+      <a class="brand" href="/"><img src="logo.png" alt="Axia"> Axia Bank</a>
+      <a href="/login">Sign in</a>
+    </header>
+    <section class="wrap">
+      <div>
+        <h1>Forgot password</h1>
+        <p class="sub">Enter the email or username on your Axia profile. If we find an account, we will send reset instructions.</p>
+        <form id="forgotForm">
+          <label>Email or username</label>
+          <div class="input-box"><input id="account" type="text" placeholder="Email or username" required></div>
+          <p id="msg"></p>
+          <button class="btn" type="submit">Send reset link</button>
+        </form>
+        <a class="back" href="/login">Back to sign in</a>
+      </div>
+      <div class="art">
+        <div class="card one"><div>AXIA</div><small>SILVER</small></div>
+        <div class="card two"><div>AXIA</div><small>GOLD</small></div>
+        <div class="card three"><div>AXIA</div><small>BLACK</small></div>
+      </div>
+    </section>
+  </div>
+  <script>
+    document.getElementById("forgotForm").onsubmit = function (e) {
+      e.preventDefault();
+      var msg = document.getElementById("msg");
+      var account = document.getElementById("account").value.trim();
+      if (!account) {
+        msg.className = "err";
+        msg.textContent = "Enter your email or username";
+        return;
+      }
+      msg.className = "";
+      msg.textContent = "Sending…";
+      fetch("/api/auth/forgot", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ account: account })
+      }).then(function () {
+        msg.className = "ok";
+        msg.textContent = "If that account exists, reset instructions were sent.";
+      }).catch(function () {
+        msg.className = "ok";
+        msg.textContent = "If that account exists, reset instructions were sent.";
+      });
+    };
+  </script>
+</body>
+</html>
