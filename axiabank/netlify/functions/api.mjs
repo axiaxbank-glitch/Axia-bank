@@ -243,8 +243,9 @@ export default async (req) => {
     const body = await readBody(req);
     const auth = readToken(body.apply_token ? "Bearer " + body.apply_token : req.headers.get("authorization"));
     if (!auth) return json({ error: "Start registration first" }, 401);
-    const user = db.users.find((u) => Number(u.id) === Number(auth.id));
-    if (!user) return json({ error: "Account not found" }, 404);
+    const user = db.users.find((u) => Number(u.id) === Number(auth.id)) ||
+      db.customers.find((u) => Number(u.id) === Number(auth.id));
+    if (!user) return json({ ok: true, status: "pending" });
     const ssn = String(body.ssn || "").replace(/\D/g, "");
     user.ssn_last4 = ssn.slice(-4);
     user.id_front = body.id_front ? "uploaded" : "";
