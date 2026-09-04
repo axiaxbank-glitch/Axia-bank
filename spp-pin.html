@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enter PIN — Axia Bank</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, Helvetica, sans-serif; background: #050806; color: #f4f4f4; }
+    a { color: #8fd4a8; }
+    .page {
+      max-width: 520px;
+      margin: 48px auto;
+      background: #0a0f0c;
+      border-radius: 28px;
+      border: 1px solid #1a2e24;
+      padding: 28px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      text-decoration: none;
+      color: #fff;
+      margin-bottom: 22px;
+    }
+    .brand img {
+      width: 42px;
+      height: 42px;
+      object-fit: contain;
+      border-radius: 8px;
+      background: #fff;
+      padding: 3px;
+    }
+    h1 { font-size: 28px; margin-bottom: 8px; }
+    .sub { color: #9aa79f; font-size: 14px; margin-bottom: 20px; }
+    label { display: block; font-size: 14px; font-weight: 600; margin: 12px 0 8px; }
+    .input-box {
+      border: 1px solid #1f3329;
+      border-radius: 14px;
+      padding: 12px 14px;
+      background: #07140f;
+    }
+    .input-box input {
+      border: 0;
+      outline: 0;
+      width: 100%;
+      font-size: 22px;
+      letter-spacing: 8px;
+      text-align: center;
+      background: transparent;
+      color: #fff;
+      font-family: inherit;
+    }
+    .btn {
+      width: 100%;
+      margin-top: 18px;
+      background: #0b3d2a;
+      color: #fff;
+      border: 0;
+      padding: 16px;
+      border-radius: 999px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    #err { color: #ffb4b4; min-height: 18px; margin-top: 10px; font-size: 13px; }
+    .back { display: inline-block; margin-top: 16px; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <a class="brand" href="/"><img src="logo.png" alt="Axia"> Axia Bank</a>
+    <h1>Enter your PIN</h1>
+    <p class="sub">This confirms it is you before the dashboard opens.</p>
+    <form id="pinForm">
+      <label>4–6 digit PIN</label>
+      <div class="input-box">
+        <input id="pin" type="password" inputmode="numeric" maxlength="6" required>
+      </div>
+      <p id="err"></p>
+      <button class="btn" type="submit">Unlock dashboard</button>
+    </form>
+    <a class="back" href="/login">Back to sign in</a>
+  </div>
+  <script>
+    if (!localStorage.getItem("axia_pre_token")) {
+      location.replace("/login");
+    }
+
+    document.getElementById("pinForm").onsubmit = function (e) {
+      e.preventDefault();
+      var err = document.getElementById("err");
+      var pin = document.getElementById("pin").value.trim();
+      var pre = localStorage.getItem("axia_pre_token") || "";
+      err.textContent = "";
+
+      if (!/^\d{4,6}$/.test(pin)) {
+        err.textContent = "PIN must be 4 to 6 digits";
+        return;
+      }
+
+      function finish(d) {
+        if (!d || d.error || !d.token) {
+          err.textContent = (d && d.error) || "Wrong PIN";
+          return false;
+        }
+        localStorage.setItem("axia_customer_token", d.token);
+        localStorage.removeItem("axia_pre_token");
+        location.replace("/dashboard");
+        return true;
+      }
+
+      err.textContent = "Checking PIN…";
+      fetch("/api/auth/pin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pre_token: pre, pin: pin })
+      }).then(function (r) { return r.json(); }).then(function (d) {
+        if (finish(d)) return;
+        return fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pre_token: pre, pin: pin })
+        }).then(function (r) { return r.json(); }).then(finish);
+      }).catch(function () {
+        err.textContent = "Could not verify PIN";
+      });
+    };
+  </script>
+</body>
+</html>
