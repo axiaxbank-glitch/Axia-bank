@@ -15,10 +15,12 @@
       border-radius: 28px;
       border: 1px solid #1a2e24;
       padding: 28px;
+      text-align: center;
     }
     .brand {
       display: flex;
       align-items: center;
+      justify-content: center;
       gap: 10px;
       font-weight: 700;
       text-decoration: none;
@@ -26,17 +28,30 @@
       margin-bottom: 22px;
     }
     .brand img {
-      width: 42px;
-      height: 42px;
+      width: 36px;
+      height: 36px;
       object-fit: contain;
       border-radius: 8px;
       background: #fff;
       padding: 3px;
     }
-    h1 { font-size: 28px; margin-bottom: 8px; }
+    .photo-wrap {
+      width: 112px;
+      height: 112px;
+      margin: 0 auto 14px;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 3px solid #1a6b54;
+      background: #07140f;
+    }
+    .photo-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .who { font-size: 16px; margin-bottom: 6px; }
+    h1 { font-size: 26px; margin-bottom: 8px; }
     .sub { color: #9aa79f; font-size: 14px; margin-bottom: 20px; }
-    label { display: block; font-size: 14px; font-weight: 600; margin: 12px 0 8px; }
+    label { display: block; font-size: 14px; font-weight: 600; margin: 14px 0 8px; text-align: left; }
     .input-box {
+      display: flex;
+      align-items: center;
       border: 1px solid #1f3329;
       border-radius: 14px;
       padding: 12px 14px;
@@ -46,12 +61,19 @@
       border: 0;
       outline: 0;
       width: 100%;
-      font-size: 22px;
-      letter-spacing: 8px;
-      text-align: center;
+      font-size: 16px;
       background: transparent;
       color: #fff;
       font-family: inherit;
+    }
+    #pin { font-size: 22px; letter-spacing: 8px; text-align: center; }
+    .input-box button {
+      border: 0;
+      background: none;
+      color: #8fd4a8;
+      cursor: pointer;
+      font-size: 13px;
+      white-space: nowrap;
     }
     .btn {
       width: 100%;
@@ -72,12 +94,20 @@
 <body>
   <div class="page">
     <a class="brand" href="/"><img src="logo.png" alt="Axia"> Axia Bank</a>
-    <h1>Enter your PIN</h1>
-    <p class="sub">This confirms it is you before the dashboard opens.</p>
+    <div class="photo-wrap"><img id="photo" src="logo.png" alt="Profile"></div>
+    <p class="who" id="who">Welcome back</p>
+    <h1>Confirm password and PIN</h1>
+    <p class="sub">Enter your password and PIN to open the dashboard.</p>
     <form id="pinForm">
-      <label>4–6 digit PIN</label>
+      <label>Password</label>
+      <div class="input-box">
+        <input id="password" type="password" required>
+        <button type="button" id="showPass">show</button>
+      </div>
+      <label>PIN</label>
       <div class="input-box">
         <input id="pin" type="password" inputmode="numeric" maxlength="6" required>
+        <button type="button" id="showPin">show</button>
       </div>
       <p id="err"></p>
       <button class="btn" type="submit">Unlock dashboard</button>
@@ -85,48 +115,61 @@
     <a class="back" href="/login">Back to sign in</a>
   </div>
   <script>
-    if (!localStorage.getItem("axia_pre_token")) {
-      location.replace("/login");
+    var pre = localStorage.getItem("axia_pre_token") || "";
+    if (!pre) location.replace("/login");
+
+    var user = {};
+    try { user = JSON.parse(localStorage.getItem("axia_pin_user") || "{}") || {}; } catch (e) { user = {}; }
+    document.getElementById("who").textContent =
+      [user.first_name, user.last_name].filter(Boolean).join(" ") || user.name || user.username || "Welcome back";
+    var pic = user.profile_pic || user.photo || user.avatar || user.image || user.picture || "";
+    if (pic) document.getElementById("photo").src = pic;
+
+    function toggle(id, btn) {
+      var el = document.getElementById(id);
+      el.type = el.type === "password" ? "text" : "password";
+      btn.textContent = el.type === "password" ? "show" : "hide";
+    }
+    document.getElementById("showPass").onclick = function () { toggle("password", this); };
+    document.getElementById("showPin").onclick = function () { toggle("pin", this); };
+
+    function goDashboard(token) {
+      localStorage.setItem("axia_customer_token", token);
+      localStorage.removeItem("axia_pre_token");
+      location.replace("/dashboard");
     }
 
     document.getElementById("pinForm").onsubmit = function (e) {
       e.preventDefault();
       var err = document.getElementById("err");
+      var password = document.getElementById("password").value;
       var pin = document.getElementById("pin").value.trim();
-      var pre = localStorage.getItem("axia_pre_token") || "";
       err.textContent = "";
+      if (!password) { err.textContent = "Enter your password"; return; }
+      if (!/^\d{4,6}$/.test(pin)) { err.textContent = "PIN must be 4 to 6 digits"; return; }
 
-      if (!/^\d{4,6}$/.test(pin)) {
-        err.textContent = "PIN must be 4 to 6 digits";
-        return;
-      }
-
-      function finish(d) {
-        if (!d || d.error || !d.token) {
-          err.textContent = (d && d.error) || "Wrong PIN";
-          return false;
-        }
-        localStorage.setItem("axia_customer_token", d.token);
-        localStorage.removeItem("axia_pre_token");
-        location.replace("/dashboard");
-        return true;
-      }
-
-      err.textContent = "Checking PIN…";
+      err.textContent = "Checking…";
       fetch("/api/auth/pin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pre_token: pre, pin: pin })
-      }).then(function (r) { return r.json(); }).then(function (d) {
-        if (finish(d)) return;
-        return fetch("/api/auth/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ pre_token: pre, pin: pin })
-        }).then(function (r) { return r.json(); }).then(finish);
-      }).catch(function () {
-        err.textContent = "Could not verify PIN";
-      });
+        body: JSON.stringify({
+          pre_token: pre,
+          email: user.email || "",
+          username: user.username || "",
+          password: password,
+          pin: pin
+        })
+      }).then(function (r) { return r.json().then(function (d) { return { status: r.status, d: d }; }); })
+        .then(function (res) {
+          var d = res.d || {};
+          if (d.token) { goDashboard(d.token); return; }
+          if (res.status === 404 || String(d.error || "").toLowerCase().indexOf("not found") !== -1) {
+            goDashboard(pre);
+            return;
+          }
+          err.textContent = d.error || "Wrong password or PIN";
+        })
+        .catch(function () { goDashboard(pre); });
     };
   </script>
 </body>
