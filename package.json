@@ -1,0 +1,14 @@
+{
+  "name": "axia-bank",
+  "version": "2.0.0",
+  "description": "Axia Bank SANDBOX – demo banking system",
+  "main": "server-sandbox.js",
+  "scripts": {
+    "start": "node server-sandbox.js"
+  },
+  "dependencies": {
+    "@netlify/blobs": "^8.1.2",
+    "sql.js": "^1.12.0",
+    "ws": "^8.18.0"
+  }
+}
