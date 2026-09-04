@@ -4,7 +4,7 @@ const path = require("path");
 const { WebSocketServer } = require("ws");
 const db = require("./db/store");
 
-const PORT = 3000;
+const PORT = Number(process.env.PORT || 3000);
 const root = __dirname;
 const loginHits = {};
 function tooManyLogins(req) {
@@ -754,7 +754,7 @@ wss.on("connection", function (ws) {
 });
 
 db.init().then(function () {
-  server.listen(PORT, function () {
-    console.log("Axia server running on http://localhost:" + PORT);
+  server.listen(PORT,"0.0.0.0", function () {
+    console.log("Axia server running on port" + PORT);
   });
 });
