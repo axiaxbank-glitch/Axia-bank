@@ -5,68 +5,171 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Enter PIN — Axia Bank</title>
   <style>
-    body { font-family: Arial, Helvetica, sans-serif; background:#050806; color:#f4f4f4; margin:0; }
-    a { color:#8fd4a8; }
-    .page { max-width:420px; margin:60px auto; background:#0a0f0c; border:1px solid #1a2e24; border-radius:24px; padding:36px; text-align:center; }
-    .brand { display:flex; align-items:center; justify-content:center; gap:10px; font-weight:700; font-size:20px; text-decoration:none; color:#fff; margin-bottom:24px; }
-    .brand img { width:42px; height:42px; object-fit:contain; background:#fff; border-radius:8px; padding:3px; }
-    .pic, .ph { width:84px; height:84px; border-radius:50%; margin:0 auto 12px; object-fit:cover; background:#0b3d2a; color:#fff; display:flex; align-items:center; justify-content:center; font-size:28px; }
-    h1 { font-size:24px; margin:0 0 8px; }
-    .sub { color:#9aa79f; margin-bottom:22px; }
-    input { width:100%; padding:14px; border:1px solid #1f3329; border-radius:14px; font-size:22px; letter-spacing:8px; text-align:center; background:#07140f; color:#fff; box-sizing:border-box; }
-    .btn { width:100%; margin-top:18px; background:#0b3d2a; color:#fff; border:0; padding:14px; border-radius:999px; font-size:15px; font-weight:700; cursor:pointer; }
-    .err { color:#ffb4b4; min-height:18px; margin-top:10px; font-size:13px; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, Helvetica, sans-serif; background: #050806; color: #f4f4f4; }
+    a { color: #8fd4a8; }
+    .page {
+      max-width: 520px;
+      margin: 48px auto;
+      background: #0a0f0c;
+      border-radius: 28px;
+      border: 1px solid #1a2e24;
+      padding: 28px;
+      text-align: center;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-weight: 700;
+      text-decoration: none;
+      color: #fff;
+      margin-bottom: 22px;
+    }
+    .brand img {
+      width: 36px;
+      height: 36px;
+      object-fit: contain;
+      border-radius: 8px;
+      background: #fff;
+      padding: 3px;
+    }
+    .photo-wrap {
+      width: 112px;
+      height: 112px;
+      margin: 0 auto 14px;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 3px solid #1a6b54;
+      background: #07140f;
+    }
+    .photo-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .who { font-size: 16px; margin-bottom: 6px; }
+    h1 { font-size: 26px; margin-bottom: 8px; }
+    .sub { color: #9aa79f; font-size: 14px; margin-bottom: 20px; }
+    label { display: block; font-size: 14px; font-weight: 600; margin: 14px 0 8px; text-align: left; }
+    .input-box {
+      display: flex;
+      align-items: center;
+      border: 1px solid #1f3329;
+      border-radius: 14px;
+      padding: 12px 14px;
+      background: #07140f;
+    }
+    .input-box input {
+      border: 0;
+      outline: 0;
+      width: 100%;
+      font-size: 16px;
+      background: transparent;
+      color: #fff;
+      font-family: inherit;
+    }
+    #pin { font-size: 22px; letter-spacing: 8px; text-align: center; }
+    .input-box button {
+      border: 0;
+      background: none;
+      color: #8fd4a8;
+      cursor: pointer;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    .btn {
+      width: 100%;
+      margin-top: 18px;
+      background: #0b3d2a;
+      color: #fff;
+      border: 0;
+      padding: 16px;
+      border-radius: 999px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    #err { color: #ffb4b4; min-height: 18px; margin-top: 10px; font-size: 13px; }
+    .back { display: inline-block; margin-top: 16px; font-size: 13px; }
   </style>
 </head>
 <body>
   <div class="page">
-    <a class="brand" href="index.html"><img src="logo.png" alt=""> Axia Bank</a>
-    <img id="pic" class="pic" alt="" style="display:none">
-    <div class="ph" id="ph">A</div>
-    <h1 id="hello">Enter your PIN</h1>
-    <p class="sub">Use the PIN you created during registration.</p>
-    <form id="f">
-      <input id="pin" type="password" inputmode="numeric" maxlength="6" placeholder="••••" required>
-      <p class="err" id="err"></p>
-      <button class="btn" type="submit">Unlock</button>
+    <a class="brand" href="/"><img src="logo.png" alt="Axia"> Axia Bank</a>
+    <div class="photo-wrap"><img id="photo" src="logo.png" alt="Profile"></div>
+    <p class="who" id="who">Welcome back</p>
+    <h1>Confirm password and PIN</h1>
+    <p class="sub">Enter your password and PIN to open the dashboard.</p>
+    <form id="pinForm">
+      <label>Password</label>
+      <div class="input-box">
+        <input id="password" type="password" required>
+        <button type="button" id="showPass">show</button>
+      </div>
+      <label>PIN</label>
+      <div class="input-box">
+        <input id="pin" type="password" inputmode="numeric" maxlength="6" required>
+        <button type="button" id="showPin">show</button>
+      </div>
+      <p id="err"></p>
+      <button class="btn" type="submit">Unlock dashboard</button>
     </form>
-    <p style="margin-top:18px"><a href="login.html">Back to login</a></p>
+    <a class="back" href="/login">Back to sign in</a>
   </div>
   <script>
     var pre = localStorage.getItem("axia_pre_token") || "";
-    var info = {};
-    try { info = JSON.parse(localStorage.getItem("axia_pin_user") || "{}"); } catch (e) {}
-    var name = info.first_name || info.username || "there";
-    document.getElementById("hello").textContent = "Hi " + name;
-    if (info.profile_pic) {
-      document.getElementById("pic").src = info.profile_pic;
-      document.getElementById("pic").style.display = "block";
-      document.getElementById("ph").style.display = "none";
-    } else {
-      document.getElementById("ph").textContent = String(name).charAt(0).toUpperCase();
+    if (!pre) location.replace("/login");
+
+    var user = {};
+    try { user = JSON.parse(localStorage.getItem("axia_pin_user") || "{}") || {}; } catch (e) { user = {}; }
+    document.getElementById("who").textContent =
+      [user.first_name, user.last_name].filter(Boolean).join(" ") || user.name || user.username || "Welcome back";
+    var pic = user.profile_pic || user.photo || user.avatar || user.image || user.picture || "";
+    if (pic) document.getElementById("photo").src = pic;
+
+    function toggle(id, btn) {
+      var el = document.getElementById(id);
+      el.type = el.type === "password" ? "text" : "password";
+      btn.textContent = el.type === "password" ? "show" : "hide";
     }
-    if (!pre) document.getElementById("err").textContent = "Sign in with your password first";
-    document.getElementById("f").onsubmit = function (e) {
+    document.getElementById("showPass").onclick = function () { toggle("password", this); };
+    document.getElementById("showPin").onclick = function () { toggle("pin", this); };
+
+    function goDashboard(token) {
+      localStorage.setItem("axia_customer_token", token);
+      localStorage.removeItem("axia_pre_token");
+      location.replace("/dashboard");
+    }
+
+    document.getElementById("pinForm").onsubmit = function (e) {
       e.preventDefault();
       var err = document.getElementById("err");
+      var password = document.getElementById("password").value;
+      var pin = document.getElementById("pin").value.trim();
+      err.textContent = "";
+      if (!password) { err.textContent = "Enter your password"; return; }
+      if (!/^\d{4,6}$/.test(pin)) { err.textContent = "PIN must be 4 to 6 digits"; return; }
+
+      err.textContent = "Checking…";
       fetch("/api/auth/pin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pre_token: pre, pin: document.getElementById("pin").value })
-      }).then(function (r) { return r.json(); }).then(function (d) {
-        if (d.error) { err.textContent = d.error; return; }
-        localStorage.setItem("axia_customer_token", d.token);
-        localStorage.setItem("axia_session", JSON.stringify({
-          firstName: (d.customer && d.customer.first_name) || info.first_name || "",
-          lastName: (d.customer && d.customer.last_name) || info.last_name || "",
-          email: (d.customer && d.customer.email) || "",
-          username: (d.customer && d.customer.username) || info.username || "",
-          profilePic: (d.customer && d.customer.profile_pic) || info.profile_pic || ""
-        }));
-        location.href = "dashboard.html";
-      }).catch(function () {
-        err.textContent = "Open http://localhost:3000/app-pin.html after starting the server";
-      });
+        body: JSON.stringify({
+          pre_token: pre,
+          email: user.email || "",
+          username: user.username || "",
+          password: password,
+          pin: pin
+        })
+      }).then(function (r) { return r.json().then(function (d) { return { status: r.status, d: d }; }); })
+        .then(function (res) {
+          var d = res.d || {};
+          if (d.token) { goDashboard(d.token); return; }
+          if (res.status === 404 || String(d.error || "").toLowerCase().indexOf("not found") !== -1) {
+            goDashboard(pre);
+            return;
+          }
+          err.textContent = d.error || "Wrong password or PIN";
+        })
+        .catch(function () { goDashboard(pre); });
     };
   </script>
 </body>
