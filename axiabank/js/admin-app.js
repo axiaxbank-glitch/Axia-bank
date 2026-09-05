@@ -356,6 +356,14 @@ document.getElementById("sGo").onclick = function () {
 };
 
 var chatWs = null, openThread = "";
+
+function renderAdminMsg(m) {
+  var html = "<div style='margin:6px 0'><b>" + esc((m && m.from) || "") + ":</b> ";
+  if (m && m.text) html += esc(m.text);
+  if (m && m.image) html += "<div><img src='" + String(m.image).replace(/'/g, "") + "' style='max-width:160px;display:block;margin-top:4px;border-radius:8px'></div>";
+  return html + "</div>";
+}
+
 function closeAdminChat() {
   var box = document.getElementById("chatBox");
   box.classList.remove("on");
@@ -399,13 +407,13 @@ function chatConnect() {
       if (data.threadId) openThread = data.threadId;
       document.getElementById("chatLog").innerHTML = "";
       (data.messages || []).forEach(function (m) {
-        document.getElementById("chatLog").innerHTML += "<div><b>" + esc(m.from) + ":</b> " + esc(m.text) + "</div>";
+        document.getElementById("chatLog").innerHTML += renderAdminMsg(m);
       });
     }
     if (data.type === "message") {
       if (!openThread) openThread = data.threadId;
       if (data.threadId === openThread && data.message) {
-        document.getElementById("chatLog").innerHTML += "<div><b>" + esc(data.message.from) + ":</b> " + esc(data.message.text) + "</div>";
+        document.getElementById("chatLog").innerHTML += renderAdminMsg(data.message);
       }
     }
   };
