@@ -52,7 +52,7 @@ function go(view) {
 }
 function setWho() {
   document.getElementById("who").textContent = current
-    ? ("Selected: " + (current.first_name || "") + " " + (current.last_name || "") + " ÃÂ· " + current.email)
+    ? ("Selected: " + (current.first_name || "") + " " + (current.last_name || "") + " ÃÂÃÂ· " + current.email)
     : "Select a student in the list, or use the dropdown.";
   var sel = document.getElementById("pickStudent");
   if (sel && current) sel.value = String(current.id);
@@ -62,7 +62,7 @@ function fillPicker() {
   if (!sel) return;
   var keep = current ? String(current.id) : "";
   sel.innerHTML = "<option value=''>Select a student</option>" + list.map(function (c) {
-    return "<option value='" + c.id + "'>" + esc(c.first_name || "") + " " + esc(c.last_name || "") + " ÃÂ· " + esc(c.email) + " ÃÂ· " + esc(c.status) + "</option>";
+    return "<option value='" + c.id + "'>" + esc(c.first_name || "") + " " + esc(c.last_name || "") + " ÃÂÃÂ· " + esc(c.email) + " ÃÂÃÂ· " + esc(c.status) + "</option>";
   }).join("");
   if (keep) sel.value = keep;
 }
@@ -86,7 +86,7 @@ function fillForms() {
     var html = "<table><tr><th>When</th><th>Type</th><th>Amount</th><th>Details</th></tr>";
     (d.transactions || []).forEach(function (t) {
       html += "<tr><td>" + esc(t.created_at || "") + "</td><td>" + esc(t.type) + "</td><td>" + money(t.amount_cents) + "</td><td>" +
-        esc(t.bank_name || "") + " ÃÂ· " + esc(t.holder_name || "") + " ÃÂ· " + esc(t.counterparty_account || "") + " ÃÂ· " + esc(t.set_time || "") + "</td></tr>";
+        esc(t.bank_name || "") + " ÃÂÃÂ· " + esc(t.holder_name || "") + " ÃÂÃÂ· " + esc(t.counterparty_account || "") + " ÃÂÃÂ· " + esc(t.set_time || "") + "</td></tr>";
     });
     document.getElementById("txBox").innerHTML = html + "</table>";
     var acct = (d.accounts || [])[0];
@@ -156,7 +156,7 @@ function load() {
         aum += sum;
         var live = c.status === "active" ? "<span class='tag'>Active</span>" : "<span class='tag off'>Dormant</span>";
         ahtml += "<tr><td><button type='button' class='btn ghost' data-act='edit' data-id='" + c.id + "'>" + esc(c.first_name) + " " + esc(c.last_name) + "</button></td><td>" + esc(c.email) + "</td><td>" + esc(c.phone || "") +
-          "</td><td>" + money(sum) + "</td><td>" + live + "</td><td><div class='dots'><button type='button' data-dots='" + c.id + "'>Ã¢ÂÂ¯</button>" +
+          "</td><td>" + money(sum) + "</td><td>" + live + "</td><td><div class='dots'><button type='button' data-dots='" + c.id + "'>ÃÂ¢ÃÂÃÂ¯</button>" +
           "<div class='menu' id='m" + c.id + "'>" +
           "<button type='button' data-act='fund' data-id='" + c.id + "'>Fund account</button>" +
           "<button type='button' data-act='debit' data-id='" + c.id + "'>Debit account</button>" +
@@ -205,7 +205,7 @@ function load() {
   api("/api/admin/cards").then(function (d) {
     var html = "<table><tr><th>Student</th><th>Card</th><th>Fee</th><th>Ending</th><th></th></tr>";
     (d.cards || []).forEach(function (r) {
-      html += "<tr><td>" + esc(r.name || "") + "<br>" + esc(r.email || "") + "</td><td>" + esc(r.product) + "</td><td>" + esc(r.fee || "") + "</td><td>Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢Ã¢ÂÂ¢ " + esc(r.last4 || "") + "</td><td>";
+      html += "<tr><td>" + esc(r.name || "") + "<br>" + esc(r.email || "") + "</td><td>" + esc(r.product) + "</td><td>" + esc(r.fee || "") + "</td><td>ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ " + esc(r.last4 || "") + "</td><td>";
       if (r.status === "pending") {
         html += "<button type='button' class='btn' data-kind='cards' data-id='" + r.id + "' data-action='approve'>Approve card</button>";
         html += "<button type='button' class='btn ghost' data-kind='cards' data-id='" + r.id + "' data-action='decline'>Decline</button>";
@@ -331,7 +331,7 @@ document.getElementById("mGo").onclick = function () {
   var kind = document.getElementById("mKind").value;
   var text = document.getElementById("mText").value || ("Axia " + kind + " notice");
   var amt = document.getElementById("mAmt").value;
-  document.getElementById("mMsg").textContent = "SendingÃ¢ÂÂ¦";
+  document.getElementById("mMsg").textContent = "SendingÃÂ¢ÃÂÃÂ¦";
   api("/api/admin/customers/" + current.id + "/note", "POST", { title: "Message from Axia", body: text + (amt ? " Amount: " + amt : "") });
   if (!window.axiaSendMail) { document.getElementById("mMsg").textContent = "Saved to student alerts. Email helper missing."; return; }
   sendBankMail(kind, {
@@ -368,44 +368,30 @@ function openAdminChat() {
   if (!chatWs || chatWs.readyState > 1) chatConnect();
 }
 function chatConnect() {
-  var timer = null;
-  var lastCount = 0;
-  function emit(data) {
-    if (chatWs && chatWs.onmessage) chatWs.onmessage({ data: JSON.stringify(data) });
-  }
-  function sendApi(payload) {
-    return fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
-      body: JSON.stringify(payload)
-    }).then(function (r) { return r.json(); });
-  }
-  function paint(d) {
-    if (!d || d.error) return;
-    emit({ type: "threads", threads: d.threads || [] });
-    if (d.threadId && d.messages && d.messages.length !== lastCount) {
-      lastCount = d.messages.length;
-      emit({ type: "history", threadId: d.threadId, messages: d.messages });
+  var proto = location.protocol === "https:" ? "wss://" : "ws://";
+  chatWs = new WebSocket(proto + location.host + "/chat");
+  chatWs.onopen = function () {
+    var log = document.getElementById("chatLog");
+    if (log && !log.innerHTML) log.textContent = "Chat online. Pick a student email.";
+    chatWs.send(JSON.stringify({ type: "join", role: "admin", token: token }));
+    var to = document.getElementById("chatTo");
+    if (to && to.value.trim()) {
+      openThread = to.value.trim().toLowerCase();
+      chatWs.send(JSON.stringify({ type: "open", threadId: openThread }));
     }
-  }
-  chatWs = {
-    readyState: 1,
-    onmessage: null,
-    send: function (raw) {
-      var msg = JSON.parse(raw);
-      sendApi(msg).then(function (d) {
-        if (d && d.message) emit({ type: "message", threadId: d.threadId, message: d.message });
-        else paint(d);
-      });
-    },
-    close: function () { chatWs.readyState = 3; if (timer) clearInterval(timer); }
+  };
+  chatWs.onclose = function () {
+    chatWs = null;
+    setTimeout(function () {
+      if (document.getElementById("chatBox").classList.contains("on")) chatConnect();
+    }, 1500);
   };
   chatWs.onmessage = function (ev) {
     var data = JSON.parse(ev.data);
     if (data.type === "error") { document.getElementById("chatLog").textContent = data.error; return; }
     if (data.type === "threads") {
       document.getElementById("chatThreads").innerHTML = (data.threads || []).map(function (t) {
-        var last = t.last && t.last.text ? " â " + String(t.last.text).slice(0, 24) : "";
+        var last = t.last && t.last.text ? " Ã¢ÂÂ " + String(t.last.text).slice(0, 24) : "";
         return "<div data-th='" + esc(t.id) + "' style='padding:6px;border-bottom:1px solid #eadfd3;cursor:pointer'>" + esc(t.id) + last + "</div>";
       }).join("") || "No student chats yet.";
     }
@@ -423,12 +409,7 @@ function chatConnect() {
       }
     }
   };
-  sendApi({ type: "join", token: token }).then(paint);
-  timer = setInterval(function () {
-    if (!chatWs || chatWs.readyState !== 1) return;
-    sendApi({ type: "poll", threadId: openThread || "", token: token }).then(paint);
-  }, 2500);
-}
+};
 
 document.getElementById("chatFab").onclick = function () {
   var box = document.getElementById("chatBox");
