@@ -86,7 +86,30 @@
     .profile-pop b{display:block;margin-bottom:4px}
     .profile-pop p{color:var(--muted);font-size:13px;margin:4px 0;text-align:left}
     .avatar,.ph{cursor:pointer}
-    @media(max-width:1000px){.balances b{font-size:22px}.menu.open{max-width:100%}}
+    html,body{max-width:100%;overflow-x:hidden}
+    .main{max-width:100%}
+    @media(max-width:1000px){
+      .main{padding:16px 12px 90px}
+      .head{display:block}
+      .tools{margin-top:10px}
+      .tools input{width:100%}
+      .balances{display:block;gap:12px}
+      .balances b{font-size:22px}
+      .balances>div[style]{text-align:left !important;margin-top:12px}
+      .recent-box{display:block}
+      .see-more{margin-top:8px}
+      .tiles{grid-template-columns:1fr 1fr;gap:8px}
+      .row,.tier{grid-template-columns:1fr}
+      .menu.open{max-width:100%}
+      .chat-box{right:8px;left:8px;width:auto;bottom:78px;height:60vh}
+      .profile-pop{right:10px;left:10px;width:auto}
+    }
+    @media(max-width:420px){
+      .logo span{font-size:12px}
+      .tile{min-height:58px;padding:8px 6px}
+      .tile b{font-size:12px}
+      .tile p{display:none}
+    }
   </style>
 </head>
 <body>
@@ -342,7 +365,7 @@
     function getTx(){ return JSON.parse(localStorage.getItem("axia_transactions")||"[]"); }
     function saveTx(t){ localStorage.setItem("axia_transactions", JSON.stringify(t)); }
     var session=JSON.parse(localStorage.getItem("axia_session")||"null");
-    var user=session?{firstName:session.firstName,lastName:session.lastName,email:session.email,username:session.username,profilePic:session.profilePic,checking:0,savings:0,phone:"",address:""}:{firstName:"Guest",lastName:"",email:"",checking:0,savings:0};
+    var user=session?{firstName:session.firstName,lastName:session.lastName,email:session.email,username:session.username,profilePic:session.profilePic,checking:0,savings:0,phone:"",address:""}:{firstName:"",lastName:"",email:"",username:"",checking:0,savings:0};
 
     function setPhoto(imgId, initId, name, pic){
       var img=document.getElementById(imgId), ini=document.getElementById(initId);
@@ -354,7 +377,7 @@
       var greet=hour<12?"Good morning":hour<17?"Good afternoon":"Good evening";
       var name=user.firstName||user.username||"there";
       document.getElementById("hello").textContent=greet+", "+name;
-      document.getElementById("sideName").textContent=(user.firstName||"")+" "+(user.lastName||"") || user.username || "Customer";
+      document.getElementById("sideName").textContent=user.username||((user.firstName||"")+" "+(user.lastName||"")).trim()||"Customer";
       setPhoto("dashPhoto","dashInitial",name,user.profilePic);
       setPhoto("sidePhoto","sideInitial",name,user.profilePic);
       document.getElementById("totalBal").textContent=money(Number(user.checkCurrent||user.checking)+Number(user.saveCurrent||user.savings));
@@ -382,7 +405,7 @@
     }
     function fillProfilePop(){
       var name=(user.firstName||"")+" "+(user.lastName||"");
-      document.getElementById("popName").textContent=name.trim()||"Customer";
+      document.getElementById("popName").textContent=user.username||name.trim()||"Customer";
       document.getElementById("popUser").textContent="Username: "+(user.username||"—")+userTag();
       document.getElementById("popEmail").textContent="Email: "+(user.email||"—");
       document.getElementById("popDob").textContent="Date of birth: "+(user.dob||"—");
@@ -557,16 +580,18 @@
       }).then(function(r){ return r?r.json():{}; }).then(function(d){
         (d.accounts||[]).forEach(function(a){
           var n=Number(a.available);
-          if(String(a.product).indexOf("Checking")!==-1){
+          var prod=String(a.product||"").toLowerCase();
+          var num=String(a.account_number||"");
+          if(prod.indexOf("check")!==-1){
             user.checking=n;
             user.checkCurrent=Number(a.current||n);
-            document.getElementById("checkMeta").textContent="Account "+a.account_number+" · Routing "+a.routing_number;
-            document.getElementById("acctSub").textContent="Checking "+a.account_number;
+            document.getElementById("checkMeta").textContent="Account number "+num+" · Routing "+a.routing_number;
+            document.getElementById("acctSub").textContent="Checking "+num+" · Savings listed below";
           }
-          if(String(a.product).indexOf("Savings")!==-1){
+          if(prod.indexOf("sav")!==-1){
             user.savings=n;
             user.saveCurrent=Number(a.current||n);
-            document.getElementById("saveMeta").textContent="Account "+a.account_number+" · Routing "+a.routing_number;
+            document.getElementById("saveMeta").textContent="Account number "+num+" · Routing "+a.routing_number;
           }
         });
         refreshHeader();
@@ -691,7 +716,14 @@
         }
         if(data.type==="seen"){ document.getElementById("chatStatus").textContent="Seen"; }
       };
-      chatWs.onclose=function(){ document.getElementById("chatStatus").textContent="Offline"; chatWs=null; };
+      chatWs.onerror=function(){ document.getElementById("chatStatus").textContent="Offline"; };
+      chatWs.onclose=function(){
+        document.getElementById("chatStatus").textContent="Offline";
+        chatWs=null;
+        setTimeout(function(){
+          if(document.getElementById("chatBox").classList.contains("open") && bankToken()) connectChat();
+        }, 1500);
+      };
     }
     function closeUserChat(){
       var box=document.getElementById("chatBox");
