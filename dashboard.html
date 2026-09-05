@@ -375,7 +375,7 @@
     function refreshHeader(){
       var hour=new Date().getHours();
       var greet=hour<12?"Good morning":hour<17?"Good afternoon":"Good evening";
-      var name=user.username||user.firstName||"there";
+      var name=user.firstName||user.username||"there";
       document.getElementById("hello").textContent=greet+", "+name;
       document.getElementById("sideName").textContent=user.username||((user.firstName||"")+" "+(user.lastName||"")).trim()||"Customer";
       setPhoto("dashPhoto","dashInitial",name,user.profilePic);
