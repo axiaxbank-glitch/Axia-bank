@@ -11,6 +11,9 @@
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:Georgia,"Times New Roman",serif;background:#fbf8f4;color:var(--ink)}
     .shell{display:grid;grid-template-columns:228px 1fr;min-height:100vh}
+    .menu-toggle{display:none;position:fixed;left:14px;top:14px;z-index:40;border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:8px;padding:8px 10px;font-size:20px;cursor:pointer}
+    .backdrop{display:none;position:fixed;inset:0;background:rgba(44,36,28,.35);z-index:25}
+    .backdrop.show{display:block}
     .side{background:var(--side);padding:22px 12px;display:flex;flex-direction:column;border-right:1px solid var(--line)}
     .logo{display:flex;align-items:center;gap:10px;padding:0 8px 18px;font-weight:700;letter-spacing:.08em;color:var(--brown);font-size:13px}
     .logo img{width:28px;height:28px;object-fit:contain}
@@ -61,15 +64,19 @@
     .chat-send{display:flex;gap:6px;padding:8px;border-top:1px solid var(--line)}
     .chat-send input{flex:1;padding:8px;border:1px solid var(--line);border-radius:8px}
     .chat-send button{background:#6b4428;color:#fff;border:0;border-radius:8px;padding:8px 12px;cursor:pointer}
-    @media(max-width:1000px){.shell{grid-template-columns:1fr}.side{display:none}.kpis,.tiles{grid-template-columns:1fr 1fr}}
+    @media(max-width:1000px){.shell{grid-template-columns:1fr}.side{position:fixed;inset:0 auto 0 0;width:240px;z-index:30;transform:translateX(-100%);transition:transform .2s;display:flex}.side.open{transform:translateX(0)}.main{padding:64px 16px 90px}.kpis,.tiles{grid-template-columns:1fr 1fr}.head{flex-direction:column}.tools{width:100%}.tools input{flex:1}.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}.table-wrap table{min-width:680px}.menu-toggle{display:block}}
+    @media(max-width:600px){.kpis,.tiles{grid-template-columns:1fr}.main{padding-left:12px;padding-right:12px}.head h1{font-size:24px}.chatbox{right:10px;left:10px;width:auto}}
   </style>
 </head>
 <body>
+  <button type="button" class="menu-toggle" id="menuToggle" aria-label="Open menu">☰</button>
+  <div class="backdrop" id="menuBackdrop"></div>
   <div class="shell">
     <aside class="side">
       <div class="logo"><img src="logo.png" alt="">AXIA BANK</div>
       <button type="button" class="nav on" data-go="dash">Dashboard</button>
       <button type="button" class="nav" data-go="approved">Customers</button>
+      <button type="button" class="nav" data-go="accounts">Accounts</button>
       <button type="button" class="nav" data-go="review">Approvals</button>
       <button type="button" class="nav" data-go="deposits">Deposits</button>
       <button type="button" class="nav" data-go="withdrawals">Withdrawals</button>
@@ -114,7 +121,7 @@
         </div>
         <div class="tiles">
           <div class="tile" data-go="approved"><div class="ico">▣</div><b>User Management</b><p>View and manage all customers</p></div>
-          <div class="tile" data-go="approved"><div class="ico">▤</div><b>All Accounts</b><p>Search and control accounts</p></div>
+          <div class="tile" data-go="accounts"><div class="ico">▤</div><b>All Accounts</b><p>Search and control accounts</p></div>
           <div class="tile" data-go="tx"><div class="ico">⇄</div><b>Live Transactions</b><p>Posted activity for the selected student</p></div>
           <div class="tile" data-go="review"><div class="ico">↻</div><b>Pending Applications</b><p>Open or decline new accounts</p></div>
           <div class="tile" data-go="withdrawals"><div class="ico">🤝</div><b>Withdrawal Queue</b><p>Approve or decline cash-out requests</p></div>
@@ -131,6 +138,7 @@
 
       <div class="view" id="view-review"><h2>Approvals</h2><div id="reviewBox"></div></div>
       <div class="view" id="view-approved"><h2>Customers</h2><div id="approvedBox"></div></div>
+      <div class="view" id="view-accounts"><h2>Accounts</h2><div class="table-wrap" id="accountsBox"></div></div>
       <div class="view" id="view-fund">
         <div class="card">
           <h3>Fund account</h3>
@@ -215,6 +223,9 @@
       <button type="button" id="chatSend" onclick="sendAdminChat()">Send</button>
     </div>
   </div>
+  <script>
+  (function(){var side=document.querySelector(".side"),toggle=document.getElementById("menuToggle"),backdrop=document.getElementById("menuBackdrop");function closeMenu(){if(side)side.classList.remove("open");if(backdrop)backdrop.classList.remove("show");}if(toggle)toggle.addEventListener("click",function(){side.classList.toggle("open");backdrop.classList.toggle("show");});if(backdrop)backdrop.addEventListener("click",closeMenu);document.querySelectorAll(".nav").forEach(function(n){n.addEventListener("click",closeMenu);});})();
+  </script>
   <script src="js/admin-app.js"></script>
 
 <script>
