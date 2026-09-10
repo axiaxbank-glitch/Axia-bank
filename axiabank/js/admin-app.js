@@ -49,10 +49,11 @@ function go(view) {
   var panel = document.getElementById("view-" + view);
   if (panel) panel.classList.add("on");
   if (view === "chat") openAdminChat();
+  if (view === "cards" || view === "accounts") load();
 }
 function setWho() {
   document.getElementById("who").textContent = current
-    ? ("Selected: " + (current.first_name || "") + " " + (current.last_name || "") + " ÃÂÃÂ· " + current.email)
+    ? ("Selected: " + (current.first_name || "") + " " + (current.last_name || "") + " · " + current.email)
     : "Select a student in the list, or use the dropdown.";
   var sel = document.getElementById("pickStudent");
   if (sel && current) sel.value = String(current.id);
@@ -62,7 +63,7 @@ function fillPicker() {
   if (!sel) return;
   var keep = current ? String(current.id) : "";
   sel.innerHTML = "<option value=''>Select a student</option>" + list.map(function (c) {
-    return "<option value='" + c.id + "'>" + esc(c.first_name || "") + " " + esc(c.last_name || "") + " ÃÂÃÂ· " + esc(c.email) + " ÃÂÃÂ· " + esc(c.status) + "</option>";
+    return "<option value='" + c.id + "'>" + esc(c.first_name || "") + " " + esc(c.last_name || "") + " · " + esc(c.email) + " · " + esc(c.status) + "</option>";
   }).join("");
   if (keep) sel.value = keep;
 }
@@ -86,7 +87,7 @@ function fillForms() {
     var html = "<table><tr><th>When</th><th>Type</th><th>Amount</th><th>Details</th></tr>";
     (d.transactions || []).forEach(function (t) {
       html += "<tr><td>" + esc(t.created_at || "") + "</td><td>" + esc(t.type) + "</td><td>" + money(t.amount_cents) + "</td><td>" +
-        esc(t.bank_name || "") + " ÃÂÃÂ· " + esc(t.holder_name || "") + " ÃÂÃÂ· " + esc(t.counterparty_account || "") + " ÃÂÃÂ· " + esc(t.set_time || "") + "</td></tr>";
+        esc(t.bank_name || "") + " · " + esc(t.holder_name || "") + " · " + esc(t.counterparty_account || "") + " · " + esc(t.set_time || "") + "</td></tr>";
     });
     document.getElementById("txBox").innerHTML = html + "</table>";
     var acct = (d.accounts || [])[0];
@@ -95,6 +96,19 @@ function fillForms() {
       document.getElementById("dAcct").value = acct.account_number || "";
     }
   });
+}
+function buildAccounts() {
+  var box = document.getElementById("accountsBox");
+  if (!box) return;
+  var html = "<table><tr><th>Customer</th><th>Email</th><th>Product</th><th>Account</th><th>Available</th><th>Status</th></tr>";
+  var jobs = list.map(function (c) {
+    return api("/api/admin/customers/" + c.id + "/detail").then(function (d) {
+      (d.accounts || []).forEach(function (a) {
+        html += "<tr><td>" + esc((c.first_name || "") + " " + (c.last_name || "")) + "</td><td>" + esc(c.email) + "</td><td>" + esc(a.product || "") + "</td><td>" + esc(a.account_number || "") + "</td><td>" + money(Math.round(Number(a.available || 0) * 100)) + "</td><td>" + esc(a.status || "") + "</td></tr>";
+      });
+    });
+  });
+  Promise.all(jobs).then(function () { box.innerHTML = html + "</table>"; });
 }
 function pick(id, view) {
   current = list.find(function (c) { return Number(c.id) === Number(id); }) || null;
@@ -108,7 +122,7 @@ function load() {
       if (localStorage.getItem("axia_admin_local") === "1") {
         me = { role: "admin", name: "Axia Admin", email: "support@axia-bank.com" };
       } else {
-        location.href = "admin-login.html";
+        location.href = "/admin-index.html";
         return;
       }
     }
@@ -132,6 +146,7 @@ function load() {
   api("/api/admin/customers").then(function (d) {
     list = d.customers || [];
     fillPicker();
+    buildAccounts();
     var q = ((document.getElementById("adminSearch") || {}).value || "").toLowerCase();
     var pending = list.filter(function (c) { return c.status === "pending" || c.status === "draft"; });
     var approved = list.filter(function (c) {
@@ -156,7 +171,7 @@ function load() {
         aum += sum;
         var live = c.status === "active" ? "<span class='tag'>Active</span>" : "<span class='tag off'>Dormant</span>";
         ahtml += "<tr><td><button type='button' class='btn ghost' data-act='edit' data-id='" + c.id + "'>" + esc(c.first_name) + " " + esc(c.last_name) + "</button></td><td>" + esc(c.email) + "</td><td>" + esc(c.phone || "") +
-          "</td><td>" + money(sum) + "</td><td>" + live + "</td><td><div class='dots'><button type='button' data-dots='" + c.id + "'>ÃÂ¢ÃÂÃÂ¯</button>" +
+          "</td><td>" + money(sum) + "</td><td>" + live + "</td><td><div class='dots'><button type='button' data-dots='" + c.id + "'>⋮</button>" +
           "<div class='menu' id='m" + c.id + "'>" +
           "<button type='button' data-act='fund' data-id='" + c.id + "'>Fund account</button>" +
           "<button type='button' data-act='debit' data-id='" + c.id + "'>Debit account</button>" +
@@ -205,7 +220,7 @@ function load() {
   api("/api/admin/cards").then(function (d) {
     var html = "<table><tr><th>Student</th><th>Card</th><th>Fee</th><th>Ending</th><th></th></tr>";
     (d.cards || []).forEach(function (r) {
-      html += "<tr><td>" + esc(r.name || "") + "<br>" + esc(r.email || "") + "</td><td>" + esc(r.product) + "</td><td>" + esc(r.fee || "") + "</td><td>ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ÃÂ¢ÃÂÃÂ¢ " + esc(r.last4 || "") + "</td><td>";
+      html += "<tr><td>" + esc(r.name || "") + "<br>" + esc(r.email || "") + "</td><td>" + esc(r.product) + "</td><td>" + esc(r.fee || "") + "</td><td>•••• " + esc(r.last4 || "") + "</td><td>";
       if (r.status === "pending") {
         html += "<button type='button' class='btn' data-kind='cards' data-id='" + r.id + "' data-action='approve'>Approve card</button>";
         html += "<button type='button' class='btn ghost' data-kind='cards' data-id='" + r.id + "' data-action='decline'>Decline</button>";
@@ -331,7 +346,7 @@ document.getElementById("mGo").onclick = function () {
   var kind = document.getElementById("mKind").value;
   var text = document.getElementById("mText").value || ("Axia " + kind + " notice");
   var amt = document.getElementById("mAmt").value;
-  document.getElementById("mMsg").textContent = "SendingÃÂ¢ÃÂÃÂ¦";
+  document.getElementById("mMsg").textContent = "Sending…";
   api("/api/admin/customers/" + current.id + "/note", "POST", { title: "Message from Axia", body: text + (amt ? " Amount: " + amt : "") });
   if (!window.axiaSendMail) { document.getElementById("mMsg").textContent = "Saved to student alerts. Email helper missing."; return; }
   sendBankMail(kind, {
@@ -399,7 +414,7 @@ function chatConnect() {
     if (data.type === "error") { document.getElementById("chatLog").textContent = data.error; return; }
     if (data.type === "threads") {
       document.getElementById("chatThreads").innerHTML = (data.threads || []).map(function (t) {
-        var last = t.last && t.last.text ? " Ã¢ÂÂ " + String(t.last.text).slice(0, 24) : "";
+        var last = t.last && t.last.text ? " — " + String(t.last.text).slice(0, 24) : "";
         return "<div data-th='" + esc(t.id) + "' style='padding:6px;border-bottom:1px solid #eadfd3;cursor:pointer'>" + esc(t.id) + last + "</div>";
       }).join("") || "No student chats yet.";
     }
