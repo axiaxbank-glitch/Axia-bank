@@ -14,7 +14,22 @@ function sendBankMail(kind, mail) {
   var date = mail.date || new Date().toLocaleString();
   var purpose = mail.purpose || kind || "";
   var amt = String(mail.amount || "");
-  var pretty = amt.indexOf("$") === 0 ? amt : ("$" + amt);
+  var pretty = (!amt || amt === "0" || amt === "$0.00") ? "" : (amt.indexOf("$") === 0 ? amt : ("$" + amt));
+  var isDebit = kind === "debit";
+  var isCard = kind === "card" || kind === "card_approved";
+  var subject;
+  if (isCard) subject = "Axia Bank â€” Card approved";
+  else if (isDebit) subject = "Axia Bank debit alert" + (pretty ? (" " + pretty) : "");
+  else subject = "Axia Bank credit alert" + (pretty ? (" " + pretty) : "");
+  var message;
+  if (isCard) {
+    message = "Your " + (mail.card_product || mail.product || "card") + " application was approved." +
+      (mail.last4 ? (" Card ending " + mail.last4 + ".") : "") + " " + purpose;
+  } else if (isDebit) {
+    message = "Debit amount: " + (pretty || amt) + " on " + date + ". " + purpose;
+  } else {
+    message = "Credit amount: " + (pretty || amt) + " on " + date + ". " + purpose;
+  }
   return axiaSendMail(kind, {
     to_email: mail.email,
     email: mail.email,
@@ -24,15 +39,19 @@ function sendBankMail(kind, mail) {
     to_name: mail.name,
     amount: amt,
     Amount: amt,
-    credit_amount: pretty,
-    amount_usd: pretty,
-    usd_amount: pretty,
+    credit_amount: pretty || amt,
+    debit_amount: pretty || amt,
+    amount_usd: pretty || amt,
+    usd_amount: pretty || amt,
     date: date,
     transaction_date: date,
     purpose: purpose,
     transfer_purpose: purpose,
-    message: "Credit amount: " + pretty + " on " + date + ". " + purpose,
-    subject: "Axia Bank " + pretty + " " + purpose
+    product: mail.product || mail.card_product || "",
+    card_product: mail.card_product || mail.product || "",
+    last4: mail.last4 || "",
+    message: message,
+    subject: subject
   });
 }
 function esc(s) {
@@ -53,7 +72,7 @@ function go(view) {
 }
 function setWho() {
   document.getElementById("who").textContent = current
-    ? ("Selected: " + (current.first_name || "") + " " + (current.last_name || "") + " · " + current.email)
+    ? ("Selected: " + (current.first_name || "") + " " + (current.last_name || "") + " Â· " + current.email)
     : "Select a student in the list, or use the dropdown.";
   var sel = document.getElementById("pickStudent");
   if (sel && current) sel.value = String(current.id);
@@ -63,7 +82,7 @@ function fillPicker() {
   if (!sel) return;
   var keep = current ? String(current.id) : "";
   sel.innerHTML = "<option value=''>Select a student</option>" + list.map(function (c) {
-    return "<option value='" + c.id + "'>" + esc(c.first_name || "") + " " + esc(c.last_name || "") + " · " + esc(c.email) + " · " + esc(c.status) + "</option>";
+    return "<option value='" + c.id + "'>" + esc(c.first_name || "") + " " + esc(c.last_name || "") + " Â· " + esc(c.email) + " Â· " + esc(c.status) + "</option>";
   }).join("");
   if (keep) sel.value = keep;
 }
@@ -87,7 +106,7 @@ function fillForms() {
     var html = "<table><tr><th>When</th><th>Type</th><th>Amount</th><th>Details</th></tr>";
     (d.transactions || []).forEach(function (t) {
       html += "<tr><td>" + esc(t.created_at || "") + "</td><td>" + esc(t.type) + "</td><td>" + money(t.amount_cents) + "</td><td>" +
-        esc(t.bank_name || "") + " · " + esc(t.holder_name || "") + " · " + esc(t.counterparty_account || "") + " · " + esc(t.set_time || "") + "</td></tr>";
+        esc(t.bank_name || "") + " Â· " + esc(t.holder_name || "") + " Â· " + esc(t.counterparty_account || "") + " Â· " + esc(t.set_time || "") + "</td></tr>";
     });
     document.getElementById("txBox").innerHTML = html + "</table>";
     var acct = (d.accounts || [])[0];
@@ -171,7 +190,7 @@ function load() {
         aum += sum;
         var live = c.status === "active" ? "<span class='tag'>Active</span>" : "<span class='tag off'>Dormant</span>";
         ahtml += "<tr><td><button type='button' class='btn ghost' data-act='edit' data-id='" + c.id + "'>" + esc(c.first_name) + " " + esc(c.last_name) + "</button></td><td>" + esc(c.email) + "</td><td>" + esc(c.phone || "") +
-          "</td><td>" + money(sum) + "</td><td>" + live + "</td><td><div class='dots'><button type='button' data-dots='" + c.id + "'>⋮</button>" +
+          "</td><td>" + money(sum) + "</td><td>" + live + "</td><td><div class='dots'><button type='button' data-dots='" + c.id + "'>â‹®</button>" +
           "<div class='menu' id='m" + c.id + "'>" +
           "<button type='button' data-act='fund' data-id='" + c.id + "'>Fund account</button>" +
           "<button type='button' data-act='debit' data-id='" + c.id + "'>Debit account</button>" +
@@ -220,7 +239,7 @@ function load() {
   api("/api/admin/cards").then(function (d) {
     var html = "<table><tr><th>Student</th><th>Card</th><th>Fee</th><th>Ending</th><th></th></tr>";
     (d.cards || []).forEach(function (r) {
-      html += "<tr><td>" + esc(r.name || "") + "<br>" + esc(r.email || "") + "</td><td>" + esc(r.product) + "</td><td>" + esc(r.fee || "") + "</td><td>•••• " + esc(r.last4 || "") + "</td><td>";
+      html += "<tr><td>" + esc(r.name || "") + "<br>" + esc(r.email || "") + "</td><td>" + esc(r.product) + "</td><td>" + esc(r.fee || "") + "</td><td>â€¢â€¢â€¢â€¢ " + esc(r.last4 || "") + "</td><td>";
       if (r.status === "pending") {
         html += "<button type='button' class='btn' data-kind='cards' data-id='" + r.id + "' data-action='approve'>Approve card</button>";
         html += "<button type='button' class='btn ghost' data-kind='cards' data-id='" + r.id + "' data-action='decline'>Decline</button>";
@@ -346,7 +365,7 @@ document.getElementById("mGo").onclick = function () {
   var kind = document.getElementById("mKind").value;
   var text = document.getElementById("mText").value || ("Axia " + kind + " notice");
   var amt = document.getElementById("mAmt").value;
-  document.getElementById("mMsg").textContent = "Sending…";
+  document.getElementById("mMsg").textContent = "Sendingâ€¦";
   api("/api/admin/customers/" + current.id + "/note", "POST", { title: "Message from Axia", body: text + (amt ? " Amount: " + amt : "") });
   if (!window.axiaSendMail) { document.getElementById("mMsg").textContent = "Saved to student alerts. Email helper missing."; return; }
   sendBankMail(kind, {
@@ -373,10 +392,12 @@ document.getElementById("sGo").onclick = function () {
 var chatWs = null, openThread = "";
 
 function renderAdminMsg(m) {
-  var html = "<div style='margin:6px 0'><b>" + esc((m && m.from) || "") + ":</b> ";
+  var from = String((m && m.from) || "");
+  var isAdmin = /admin/i.test(from);
+  var html = "<div class='chat-msg" + (isAdmin ? " admin" : "") + "'><b>" + esc(from || "user") + "</b><div class='chat-bubble'>";
   if (m && m.text) html += esc(m.text);
-  if (m && m.image) html += "<div><img src='" + String(m.image).replace(/'/g, "") + "' style='max-width:160px;display:block;margin-top:4px;border-radius:8px'></div>";
-  return html + "</div>";
+  if (m && m.image) html += "<div><img src='" + String(m.image).replace(/'/g, "") + "' alt='' style='max-width:160px;display:block;margin-top:6px;border-radius:10px'></div>";
+  return html + "</div></div>";
 }
 
 function closeAdminChat() {
@@ -414,8 +435,8 @@ function chatConnect() {
     if (data.type === "error") { document.getElementById("chatLog").textContent = data.error; return; }
     if (data.type === "threads") {
       document.getElementById("chatThreads").innerHTML = (data.threads || []).map(function (t) {
-        var last = t.last && t.last.text ? " — " + String(t.last.text).slice(0, 24) : "";
-        return "<div data-th='" + esc(t.id) + "' style='padding:6px;border-bottom:1px solid #eadfd3;cursor:pointer'>" + esc(t.id) + last + "</div>";
+        var last = t.last && t.last.text ? " â€” " + String(t.last.text).slice(0, 24) : "";
+        return "<button type='button' data-th='" + esc(t.id) + "'>" + esc(t.id) + last + "</button>";
       }).join("") || "No student chats yet.";
     }
     if (data.type === "history") {
