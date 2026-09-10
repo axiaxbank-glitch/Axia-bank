@@ -1,3 +1,4 @@
+
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -242,7 +243,7 @@ const server = http.createServer(async function (req, res) {
 
     if (req.method === "POST" && url === "/api/auth/forgot") {
       var fb = await readBody(req);
-      var fident = String(fb.email || fb.username || "").trim().toLowerCase();
+      var fident = String(fb.email || fb.username || fb.account || "").trim().toLowerCase();
       if (!fident) return json(res, 400, { error: "Enter the email or username" });
       var fcust = db.get("customers", function (c) {
         return c.email === fident || String(c.username || "").toLowerCase() === fident;
@@ -266,7 +267,7 @@ const server = http.createServer(async function (req, res) {
 
     if (req.method === "POST" && url === "/api/auth/reset-code") {
       var cb = await readBody(req);
-      var cident = String(cb.email || cb.username || "").trim().toLowerCase();
+      var cident = String(cb.email || cb.username || cb.account || "").trim().toLowerCase();
       var ccust = db.get("customers", function (c) {
         return c.email === cident || String(c.username || "").toLowerCase() === cident;
       });
@@ -660,7 +661,15 @@ const server = http.createServer(async function (req, res) {
         if (!cardRow || cardRow.status !== "pending") return json(res, 400, { error: "Card is not pending" });
         db.update("cards", cardId, { status: cardAct === "approve" ? "approved" : "declined", decided_at: db.now() });
         db.notify(cardRow.customer_id, cardAct === "approve" ? "Card approved" : "Card declined", cardRow.product + " card " + (cardAct === "approve" ? "is ready." : "was not approved."));
-        return json(res, 200, { ok: true });
+        var cardCust = db.get("customers", function (c) { return c.id === cardRow.customer_id; });
+        var mail = null;
+        if (cardAct === "approve" && cardCust) {
+          mail = mailPayload(cardCust, "card", 0, (cardRow.product || "Card") + " application approved");
+          mail.product = cardRow.product || "Card";
+          mail.card_product = cardRow.product || "Card";
+          mail.last4 = cardDigits(cardRow).slice(-4);
+        }
+        return json(res, 200, { ok: true, mail: mail });
       }
       return json(res, 404, { error: "Unknown admin route" });
     }
