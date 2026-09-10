@@ -1,3 +1,4 @@
+
 var token = localStorage.getItem("axia_admin_token") || "";
 var current = null;
 var list = [];
@@ -392,12 +393,10 @@ document.getElementById("sGo").onclick = function () {
 var chatWs = null, openThread = "";
 
 function renderAdminMsg(m) {
-  var from = String((m && m.from) || "");
-  var isAdmin = /admin/i.test(from);
-  var html = "<div class='chat-msg" + (isAdmin ? " admin" : "") + "'><b>" + esc(from || "user") + "</b><div class='chat-bubble'>";
+  var html = "<div style='margin:6px 0'><b>" + esc((m && m.from) || "") + ":</b> ";
   if (m && m.text) html += esc(m.text);
-  if (m && m.image) html += "<div><img src='" + String(m.image).replace(/'/g, "") + "' alt='' style='max-width:160px;display:block;margin-top:6px;border-radius:10px'></div>";
-  return html + "</div></div>";
+  if (m && m.image) html += "<div><img src='" + String(m.image).replace(/'/g, "") + "' style='max-width:160px;display:block;margin-top:4px;border-radius:8px'></div>";
+  return html + "</div>";
 }
 
 function closeAdminChat() {
@@ -436,7 +435,7 @@ function chatConnect() {
     if (data.type === "threads") {
       document.getElementById("chatThreads").innerHTML = (data.threads || []).map(function (t) {
         var last = t.last && t.last.text ? " â€” " + String(t.last.text).slice(0, 24) : "";
-        return "<button type='button' data-th='" + esc(t.id) + "'>" + esc(t.id) + last + "</button>";
+        return "<div data-th='" + esc(t.id) + "' style='padding:6px;border-bottom:1px solid #eadfd3;cursor:pointer'>" + esc(t.id) + last + "</div>";
       }).join("") || "No student chats yet.";
     }
     if (data.type === "history") {
