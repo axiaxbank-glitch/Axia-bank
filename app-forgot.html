@@ -1,9 +1,12 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Forgot Password — Axia Bank</title>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <script src="js/axia-mail.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: Arial, Helvetica, sans-serif; background: #050806; color: #f4f4f4; }
@@ -19,6 +22,8 @@
     .input-box { display: flex; align-items: center; border: 1px solid #1f3329; border-radius: 14px; padding: 12px 14px; background: #07140f; }
     .input-box input { border: 0; outline: 0; width: 100%; font-size: 15px; background: transparent; color: #fff; font-family: inherit; }
     .btn { width: 100%; margin-top: 18px; background: #0b3d2a; color: #fff; border: 0; padding: 16px; border-radius: 999px; font-size: 15px; font-weight: 700; cursor: pointer; }
+    .btn:disabled { opacity: .6; cursor: wait; }
+    .btn.ghost { background: transparent; border: 1px solid #1f3329; margin-top: 10px; }
     .art { min-height: 360px; position: relative; }
     .card { position: absolute; width: 170px; height: 260px; border-radius: 20px; padding: 16px; color: #fff; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 22px 40px rgba(0,0,0,.45); }
     .one { left: 16px; top: 70px; background: linear-gradient(160deg,#8d8d8d,#d9d9d9); color: #222; transform: rotate(-16deg); }
@@ -28,7 +33,11 @@
     #msg.err { color: #ffb4b4; }
     #msg.ok { color: #8fd4a8; }
     .back { display: inline-block; margin-top: 16px; font-size: 14px; }
-    @media (max-width: 900px) { .wrap { grid-template-columns: 1fr; } .art { display: none; } }
+    .step { display: none; }
+    .step.on { display: block; }
+    .steps { display: flex; gap: 8px; margin-bottom: 16px; font-size: 12px; color: #6f7f76; }
+    .steps span.on { color: #8fd4a8; font-weight: 700; }
+    @media (max-width: 900px) { .wrap { grid-template-columns: 1fr; padding: 16px 20px 32px; } .art { display: none; } .nav { padding: 16px 20px; } h1 { font-size: 26px; } }
   </style>
 </head>
 <body>
@@ -39,14 +48,48 @@
     </header>
     <section class="wrap">
       <div>
-        <h1>Forgot password</h1>
-        <p class="sub">Enter the email or username on your Axia profile. If we find an account, we will send reset instructions.</p>
-        <form id="forgotForm">
-          <label>Email or username</label>
-          <div class="input-box"><input id="account" type="text" placeholder="Email or username" required></div>
-          <p id="msg"></p>
-          <button class="btn" type="submit">Send reset link</button>
-        </form>
+        <div class="steps" id="stepDots">
+          <span class="on" data-s="1">1. Account</span>
+          <span data-s="2">2. Code</span>
+          <span data-s="3">3. New password</span>
+        </div>
+
+        <div class="step on" id="step1">
+          <h1>Forgot password</h1>
+          <p class="sub">Enter the email or username on your Axia profile. We will email a 6-digit code if the account exists.</p>
+          <form id="form1">
+            <label>Email or username</label>
+            <div class="input-box"><input id="account" type="text" autocomplete="username" placeholder="Email or username" required></div>
+            <p id="msg"></p>
+            <button class="btn" id="btn1" type="submit">Send 6-digit code</button>
+          </form>
+        </div>
+
+        <div class="step" id="step2">
+          <h1>Enter code</h1>
+          <p class="sub">Check your email for a 6-digit code. It expires in 15 minutes.</p>
+          <form id="form2">
+            <label>6-digit code</label>
+            <div class="input-box"><input id="code" type="text" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" placeholder="123456" required></div>
+            <p id="msg2"></p>
+            <button class="btn" id="btn2" type="submit">Verify code</button>
+            <button class="btn ghost" id="btnResend" type="button">Resend code</button>
+          </form>
+        </div>
+
+        <div class="step" id="step3">
+          <h1>New password</h1>
+          <p class="sub">Choose a new password (8+ characters).</p>
+          <form id="form3">
+            <label>New password</label>
+            <div class="input-box"><input id="pass1" type="password" autocomplete="new-password" minlength="8" required></div>
+            <label>Confirm password</label>
+            <div class="input-box"><input id="pass2" type="password" autocomplete="new-password" minlength="8" required></div>
+            <p id="msg3"></p>
+            <button class="btn" id="btn3" type="submit">Save password</button>
+          </form>
+        </div>
+
         <a class="back" href="/login">Back to sign in</a>
       </div>
       <div class="art">
@@ -57,28 +100,117 @@
     </section>
   </div>
   <script>
-    document.getElementById("forgotForm").onsubmit = function (e) {
-      e.preventDefault();
-      var msg = document.getElementById("msg");
-      var account = document.getElementById("account").value.trim();
-      if (!account) {
-        msg.className = "err";
-        msg.textContent = "Enter your email or username";
-        return;
-      }
-      msg.className = "";
-      msg.textContent = "Sending…";
-      fetch("/api/auth/forgot", {
+    var state = { account: "", email: "", reset_token: "" };
+    function showStep(n) {
+      document.querySelectorAll(".step").forEach(function (el) { el.classList.remove("on"); });
+      document.getElementById("step" + n).classList.add("on");
+      document.querySelectorAll("#stepDots span").forEach(function (s) {
+        s.classList.toggle("on", Number(s.getAttribute("data-s")) === n);
+      });
+    }
+    function setMsg(id, text, ok) {
+      var el = document.getElementById(id);
+      el.className = ok === true ? "ok" : (ok === false ? "err" : "");
+      el.textContent = text || "";
+    }
+    function requestCode() {
+      var account = (document.getElementById("account").value || state.account || "").trim();
+      if (!account) { setMsg("msg", "Enter your email or username", false); return Promise.resolve(); }
+      state.account = account;
+      setMsg("msg", "Sending…");
+      setMsg("msg2", "Sending…");
+      document.getElementById("btn1").disabled = true;
+      return fetch("/api/auth/forgot", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ account: account })
-      }).then(function () {
-        msg.className = "ok";
-        msg.textContent = "If that account exists, reset instructions were sent.";
-      }).catch(function () {
-        msg.className = "ok";
-        msg.textContent = "If that account exists, reset instructions were sent.";
-      });
+        body: JSON.stringify({ account: account, email: account, username: account })
+      }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+        .then(function (res) {
+          document.getElementById("btn1").disabled = false;
+          if (!res.ok || res.j.error) {
+            setMsg("msg", res.j.error || "Could not send code", false);
+            setMsg("msg2", res.j.error || "Could not send code", false);
+            return;
+          }
+          state.email = res.j.email || account;
+          var params = {
+            to_email: state.email,
+            email: state.email,
+            user_email: state.email,
+            name: "Customer",
+            to_name: "Customer",
+            code: res.j.code,
+            reset_code: res.j.code,
+            subject: "Axia Bank password reset code",
+            message: "Your Axia Bank password reset code is " + res.j.code + ". It expires in 15 minutes."
+          };
+          var send = (window.axiaSendMail ? axiaSendMail("reset", params) : Promise.resolve({ skipped: true }));
+          return send.then(function () {
+            setMsg("msg", "Code sent to your email.", true);
+            setMsg("msg2", "Code sent. Check your inbox.", true);
+            showStep(2);
+          }).catch(function (err) {
+            setMsg("msg", "Code created but email failed: " + String(err), false);
+            setMsg("msg2", "Email failed. Use Resend, or ask support.", false);
+            showStep(2);
+          });
+        })
+        .catch(function () {
+          document.getElementById("btn1").disabled = false;
+          setMsg("msg", "Network error. Try again.", false);
+        });
+    }
+    document.getElementById("form1").onsubmit = function (e) {
+      e.preventDefault();
+      requestCode();
+    };
+    document.getElementById("btnResend").onclick = function () { requestCode(); };
+    document.getElementById("form2").onsubmit = function (e) {
+      e.preventDefault();
+      var code = document.getElementById("code").value.trim();
+      if (!/^\d{6}$/.test(code)) { setMsg("msg2", "Enter the 6-digit code", false); return; }
+      document.getElementById("btn2").disabled = true;
+      setMsg("msg2", "Verifying…");
+      fetch("/api/auth/reset-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: state.email || state.account, account: state.account, code: code })
+      }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+        .then(function (res) {
+          document.getElementById("btn2").disabled = false;
+          if (!res.ok || res.j.error) { setMsg("msg2", res.j.error || "Incorrect code", false); return; }
+          state.reset_token = res.j.reset_token;
+          setMsg("msg2", "Code verified.", true);
+          showStep(3);
+        })
+        .catch(function () {
+          document.getElementById("btn2").disabled = false;
+          setMsg("msg2", "Network error. Try again.", false);
+        });
+    };
+    document.getElementById("form3").onsubmit = function (e) {
+      e.preventDefault();
+      var p1 = document.getElementById("pass1").value;
+      var p2 = document.getElementById("pass2").value;
+      if (p1.length < 8) { setMsg("msg3", "Password must be 8+ characters", false); return; }
+      if (p1 !== p2) { setMsg("msg3", "Passwords do not match", false); return; }
+      document.getElementById("btn3").disabled = true;
+      setMsg("msg3", "Saving…");
+      fetch("/api/auth/reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reset_token: state.reset_token, password: p1, password_confirm: p2 })
+      }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+        .then(function (res) {
+          document.getElementById("btn3").disabled = false;
+          if (!res.ok || res.j.error) { setMsg("msg3", res.j.error || "Could not save password", false); return; }
+          setMsg("msg3", "Password updated. Redirecting to sign in…", true);
+          setTimeout(function () { location.href = "/login"; }, 1200);
+        })
+        .catch(function () {
+          document.getElementById("btn3").disabled = false;
+          setMsg("msg3", "Network error. Try again.", false);
+        });
     };
   </script>
 </body>
