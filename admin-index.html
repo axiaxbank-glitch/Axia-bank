@@ -32,7 +32,7 @@
 <body>
   <div class="page">
     <header class="nav">
-      <a class="brand" href="/"><img src="logo.png" alt="Axia"> Axia Bank</a>
+      <a class="brand" href="/axiabank/index.html"><img src="logo.png" alt="Axia"> Axia Bank</a>
       <a href="/login">Customer login</a>
     </header>
     <section class="wrap">
@@ -79,7 +79,7 @@
         if (d.error) { err.textContent = d.error; return; }
         if (d.role !== "admin") { err.textContent = "This portal is for admin only"; return; }
         localStorage.setItem("axia_admin_token", d.token);
-        location.href = "admin-app.html";
+        location.href = "axiabank/admin-app.html";
       }).catch(function () {
         err.textContent = "Could not reach login service";
       });
