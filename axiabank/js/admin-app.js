@@ -276,7 +276,7 @@ document.body.addEventListener("click", function (e) {
   if (t.getAttribute("data-open")) {
     api("/api/admin/customers/" + t.getAttribute("data-open") + "/approve", "POST").then(function (r) {
       if (r.error) { alert(r.error); return; }
-      if (r.mail && window.axiaSendMail) axiaSendMail("welcome", { to_email: r.mail.email, email: r.mail.email, name: r.mail.name });
+      if (r.mail && window.axiaSendMail) axiaSendMail("welcome", { to_email: r.mail.email, email: r.mail.email, name: r.mail.name, to_name: r.mail.name, user_name: r.mail.name });
       load();
     });
     return;
