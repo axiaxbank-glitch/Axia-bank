@@ -216,10 +216,11 @@ const server = http.createServer(async function (req, res) {
         return c.email === ident || String(c.username || "").toLowerCase() === ident;
       });
       if (cust && db.checkPassword(login.password, cust.password_hash)) {
-        if (cust.status === "draft") return json(res, 403, { error: "Finish ID upload first" });
+        // ID upload is a verification step, not a sign-in requirement: "draft" customers
+        // (registered but no ID uploaded yet) can sign in; the dashboard shows a reminder.
         if (cust.status === "pending") return json(res, 403, { error: "Account is waiting for admin approval" });
         if (cust.status === "declined") return json(res, 403, { error: "Account was not approved" });
-        if (cust.status !== "active" && cust.status !== "dormant") return json(res, 403, { error: "Account is not active" });
+        if (cust.status !== "active" && cust.status !== "dormant" && cust.status !== "draft") return json(res, 403, { error: "Account is not active" });
         var pre = db.createSession("customer", cust.id, { step: "pin" });
         return json(res, 200, {
           ok: true, role: "customer", step: "pin", pre_token: pre.token,
