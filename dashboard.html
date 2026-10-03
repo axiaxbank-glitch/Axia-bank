@@ -150,7 +150,6 @@
           <div>
             <h1 id="hello">Good morning</h1>
             <p>Here's what's happening with your accounts today.</p>
-            <div id="idReminder" style="display:none;margin-top:8px;padding:8px 12px;border-radius:10px;background:#fff7e0;color:#7a5a00;font-size:13px">Reminder: your ID verification is not complete yet. You can keep using your account; our team will contact you to finish verification.</div>
           </div>
           <div class="tools">
             <input id="dashSearch" placeholder="Search">
@@ -577,8 +576,6 @@
         user.dob=me.customer.dob||user.dob||"";
         var tag=document.getElementById("dormantTag");
         if(tag) tag.style.display=me.customer.status==="dormant"?"block":"none";
-        var idr=document.getElementById("idReminder");
-        if(idr) idr.style.display=me.customer.status==="draft"?"block":"none";
         return fetch("/api/accounts",{ headers:{ Authorization:"Bearer "+tok } });
       }).then(function(r){ return r?r.json():{}; }).then(function(d){
         (d.accounts||[]).forEach(function(a){
