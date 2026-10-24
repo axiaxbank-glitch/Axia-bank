@@ -2,9 +2,10 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 
-const DATA_DIR = path.resolve(process.env.DATA_DIR || path.join(__dirname, "..", "data"));
+const HERE = typeof __dirname !== "undefined" ? __dirname : "/db";
+const DATA_DIR = path.resolve((typeof process !== "undefined" && process.env && process.env.DATA_DIR) || path.join(HERE, "..", "data"));
 const DATA = path.join(DATA_DIR, "sandbox-store.json");
-const SEED = path.join(__dirname, "..", "data", "sandbox-store.json");
+const SEED = path.join(HERE, "..", "data", "sandbox-store.json");
 const empty = {
   roles: [], admins: [], customers: [], accounts: [],
   deposit_requests: [], withdrawal_requests: [], transactions: [],
@@ -13,15 +14,25 @@ const empty = {
 let store = JSON.parse(JSON.stringify(empty));
 
 function now() { return new Date().toISOString(); }
+// Storage backend: the file on disk by default; the Cloudflare Worker swaps in Durable Object SQLite via setBackend().
+let backend = null;
+let adminPassword = "SandboxAdmin1";
+function setBackend(b) { backend = b; }
+function setAdminPassword(p) { if (p) adminPassword = String(p); }
 function persist() {
+  if (backend) return backend.write(store);
   fs.mkdirSync(path.dirname(DATA), { recursive: true });
   fs.writeFileSync(DATA, JSON.stringify(store, null, 2));
 }
 function load() {
+  if (backend) { store = Object.assign({}, JSON.parse(JSON.stringify(empty)), backend.read() || {}); scrub(); return; }
   fs.mkdirSync(DATA_DIR, { recursive: true });
   // First boot on a fresh volume: start from the bundled store so existing customers can still sign in.
   if (!fs.existsSync(DATA) && DATA !== SEED && fs.existsSync(SEED)) fs.copyFileSync(SEED, DATA);
   if (fs.existsSync(DATA)) store = Object.assign({}, empty, JSON.parse(fs.readFileSync(DATA, "utf8")));
+  scrub();
+}
+function scrub() {
   // ID photos and SSNs are no longer collected; scrub any left over from older versions.
   var scrubbed = false;
   (store.customers || []).forEach(function (c) {
@@ -48,7 +59,7 @@ function addAdmin(email, name) {
   var role = store.roles.find(function (r) { return r.name === "super_admin"; });
   var existing = store.admins.find(function (a) { return a.email === email; });
   if (existing) {
-    existing.password_hash = hashPassword("SandboxAdmin1");
+    existing.password_hash = hashPassword(adminPassword);
     existing.full_name = name;
     existing.role_id = role.id;
     return;
@@ -57,7 +68,7 @@ function addAdmin(email, name) {
     id: nextId("admins"),
     role_id: role.id,
     email: email,
-    password_hash: hashPassword("SandboxAdmin1"),
+    password_hash: hashPassword(adminPassword),
     full_name: name,
     created_at: now()
   });
@@ -166,6 +177,7 @@ function sessionUser(token) {
 }
 
 module.exports = {
+  setBackend: setBackend, setAdminPassword: setAdminPassword, empty: empty,
   init: init, now: now, hashPassword: hashPassword, checkPassword: checkPassword,
   accountNumber: accountNumber, audit: audit, notify: notify,
   createSession: createSession, sessionUser: sessionUser,

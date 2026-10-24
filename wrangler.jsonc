@@ -1,0 +1,19 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "axia-bank",
+  "main": "worker/index.js",
+  "compatibility_date": "2025-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "build": { "command": "node scripts/build-assets.js" },
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "html_handling": "none",
+    "not_found_handling": "none"
+  },
+  "durable_objects": { "bindings": [{ "name": "AXIA", "class_name": "AxiaCore" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["AxiaCore"] }],
+  "observability": { "enabled": true }
+  // Custom domain (uncomment once axia-bank.com is on this Cloudflare account):
+  // ,"routes": [{ "pattern": "axia-bank.com", "custom_domain": true }, { "pattern": "www.axia-bank.com", "custom_domain": true }]
+}
