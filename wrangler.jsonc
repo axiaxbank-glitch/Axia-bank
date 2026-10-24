@@ -15,5 +15,5 @@
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["AxiaCore"] }],
   "observability": { "enabled": true }
   // Custom domain (uncomment once axia-bank.com is on this Cloudflare account):
-  // ,"routes": [{ "pattern": "axia-bank.com", "custom_domain": true }, { "pattern": "www.axia-bank.com", "custom_domain": true }]
+  ,"routes": [{ "pattern": "axia-bank.com", "custom_domain": true }, { "pattern": "www.axia-bank.com", "custom_domain": true }]
 }
