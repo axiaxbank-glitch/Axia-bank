@@ -5,7 +5,7 @@ const path = require("path");
 const { WebSocketServer } = require("ws");
 const db = require("./db/store");
 
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
 const root = __dirname;
 const loginHits = {};
 function tooManyLogins(req) {
@@ -67,7 +67,6 @@ function publicCustomer(c) {
     account_type: c.account_type, employment: c.employment,
     status: c.status, profile_pic: c.profile_pic || "",
     dob: c.dob || "",
-    ssn_last4: c.ssn_last4 || "", kyc_complete: c.kyc_complete || 0,
     created_at: c.created_at
   };
 }
@@ -166,36 +165,16 @@ const server = http.createServer(async function (req, res) {
         postal_code: String(b.postal_code || b.postalCode || "").slice(0, 20),
         reason: String(b.reason || "").slice(0, 40),
         profile_pic: pic,
-        status: "draft",
+        status: "pending",
         kyc_complete: 0,
-        ssn_last4: "",
         created_at: db.now()
       });
-      var apply = db.createSession("customer", customer.id, { step: "kyc" });
-      db.audit("customer", customer.id, "register", "customers", customer.id, "draft");
-      return json(res, 201, { ok: true, step: "kyc", apply_token: apply.token });
+      db.audit("customer", customer.id, "register", "customers", customer.id, "pending approval");
+      return json(res, 201, { ok: true, step: "pending", status: "pending" });
     }
 
     if (req.method === "POST" && url === "/api/auth/kyc") {
-      var kb = await readBody(req);
-      var kycUser = db.sessionUser(kb.apply_token || "");
-      if (!kycUser || kycUser.type !== "customer") return json(res, 401, { error: "Start with Create account first" });
-      var ssn = String(kb.ssn || "").replace(/\D/g, "");
-      if (ssn.length !== 9) return json(res, 400, { error: "Enter a 9-digit SSN" });
-      if (!kb.id_front) return json(res, 400, { error: "Upload ID front" });
-      if (!kb.id_back) return json(res, 400, { error: "Upload ID back" });
-      if (String(kb.id_front).length > 1500000 || String(kb.id_back || "").length > 1500000) {
-        return json(res, 400, { error: "ID image is too large" });
-      }
-      db.update("customers", kycUser.id, {
-        ssn_hash: db.hashPassword(ssn),
-        ssn_last4: ssn.slice(-4),
-        id_front: String(kb.id_front),
-        id_back: String(kb.id_back || ""),
-        kyc_complete: 1,
-        status: "pending"
-      });
-      db.audit("customer", kycUser.id, "kyc", "customers", kycUser.id, "pending approval");
+      // ID/SSN collection removed. Nothing is stored; kept only so old clients don't break.
       return json(res, 200, { ok: true, status: "pending" });
     }
 
@@ -600,7 +579,7 @@ const server = http.createServer(async function (req, res) {
           customer: publicCustomer(xrow),
           accounts: db.all("accounts", function (a) { return a.customer_id === xid; }).map(publicAccount),
           transactions: db.all("transactions", function (t) { return t.customer_id === xid; }).reverse(),
-          kyc: { has_id: !!(xrow.id_front || xrow.id_back) }
+          kyc: { has_id: false }
         });
       }
       if (req.method === "GET" && url === "/api/admin/deposits") {
@@ -678,6 +657,11 @@ const server = http.createServer(async function (req, res) {
     if (url.indexOf("/api/") === 0) return json(res, 404, { error: "Unknown API route" });
 
     // Short-path redirects for common entry URLs
+    if (url === "/app-id.html" || url === "/app-verify.html") {
+      res.writeHead(302, { Location: "/app-pending.html" });
+      return res.end();
+    }
+    if (url === "/healthz") return json(res, 200, { ok: true });
     if (url === "/login" || url === "/signin") {
       res.writeHead(302, { Location: "/app-login.html" });
       return res.end();

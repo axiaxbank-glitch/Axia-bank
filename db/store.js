@@ -2,7 +2,9 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 
-const DATA = path.join(__dirname, "..", "data", "sandbox-store.json");
+const DATA_DIR = path.resolve(process.env.DATA_DIR || path.join(__dirname, "..", "data"));
+const DATA = path.join(DATA_DIR, "sandbox-store.json");
+const SEED = path.join(__dirname, "..", "data", "sandbox-store.json");
 const empty = {
   roles: [], admins: [], customers: [], accounts: [],
   deposit_requests: [], withdrawal_requests: [], transactions: [],
@@ -16,8 +18,18 @@ function persist() {
   fs.writeFileSync(DATA, JSON.stringify(store, null, 2));
 }
 function load() {
-  fs.mkdirSync(path.dirname(DATA), { recursive: true });
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  // First boot on a fresh volume: start from the bundled store so existing customers can still sign in.
+  if (!fs.existsSync(DATA) && DATA !== SEED && fs.existsSync(SEED)) fs.copyFileSync(SEED, DATA);
   if (fs.existsSync(DATA)) store = Object.assign({}, empty, JSON.parse(fs.readFileSync(DATA, "utf8")));
+  // ID photos and SSNs are no longer collected; scrub any left over from older versions.
+  var scrubbed = false;
+  (store.customers || []).forEach(function (c) {
+    ["id_front", "id_back", "ssn_hash", "ssn_last4", "ssn"].forEach(function (k) {
+      if (k in c) { delete c[k]; scrubbed = true; }
+    });
+  });
+  if (scrubbed) persist();
 }
 function nextId(table) { store.seq[table] = (store.seq[table] || 0) + 1; return store.seq[table]; }
 function hashPassword(password) {

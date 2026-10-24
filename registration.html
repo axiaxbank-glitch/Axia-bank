@@ -83,14 +83,6 @@
         <div class="box" style="margin-top:12px;"><input id="address" placeholder="Home address"></div>
         <div class="section-title">Date of birth</div>
         <div class="box"><input id="dob" type="date"></div>
-        <div class="section-title">Front of ID</div>
-        <label class="upload">Upload front of ID<input id="idFront" type="file" accept="image/*" style="display:none"></label>
-        <p class="hint" id="idFrontName">Not uploaded</p>
-        <div class="section-title">Back of ID</div>
-        <label class="upload">Upload back of ID<input id="idBack" type="file" accept="image/*" style="display:none"></label>
-        <p class="hint" id="idBackName">Not uploaded</p>
-        <div class="section-title">Social Security Number</div>
-        <div class="box"><input id="ssn" placeholder="Social Security Number"></div>
         <label class="check"><input id="agree" type="checkbox"><span>I confirm this information is correct.</span></label>
         <button class="btn-dark" type="button" id="go">Submit Full Registration</button>
       </div>
@@ -143,20 +135,14 @@
     document.getElementById("profilePic").onchange = function () {
       document.getElementById("profilePicName").textContent = this.files[0] ? "Uploaded" : "Not uploaded";
     };
-    document.getElementById("idFront").onchange = function () {
-      document.getElementById("idFrontName").textContent = this.files[0] ? "Uploaded" : "Not uploaded";
-    };
-    document.getElementById("idBack").onchange = function () {
-      document.getElementById("idBackName").textContent = this.files[0] ? "Uploaded" : "Not uploaded";
-    };
     document.getElementById("go").onclick = function () {
       var username = document.getElementById("username").value.trim();
       var email = document.getElementById("email").value.trim();
       var password = document.getElementById("password").value;
       var pin = document.getElementById("pin").value;
-      var ssn = document.getElementById("ssn").value.replace(/\D/g, "");
-      var front = document.getElementById("idFront").files[0];
-      var back = document.getElementById("idBack").files[0];
+      
+      
+      
       var first = document.getElementById("firstName").value.trim();
       var last = document.getElementById("lastName").value.trim();
       var phone = document.getElementById("phone").value.trim();
@@ -188,13 +174,10 @@
       if (!dob) return show("Enter date of birth");
       var age = (Date.now() - new Date(dob).getTime()) / (365.25*24*60*60*1000);
       if (!(age >= 18 && age < 120)) return show("You must be 18 or older");
-      if (!front) return show("Upload the front of your ID");
-      if (!back) return show("Upload the back of your ID");
-      if (ssn.length !== 9) return show("Enter a 9-digit Social Security Number");
       if (!document.getElementById("agree").checked) return show("Confirm the information is correct");
       show("Submitting…");
       var picFile = document.getElementById("profilePic").files[0];
-      var reads = [readFile(front), readFile(back)];
+      var reads = [Promise.resolve(""), Promise.resolve("")];
       if (picFile) reads.push(readFile(picFile));
       Promise.all(reads).then(function (pics) {
         return fetch("/api/auth/register", {
@@ -220,17 +203,7 @@
           })
         }).then(function (r) { return r.json(); }).then(function (d) {
           if (d.error) throw new Error(d.error);
-          localStorage.setItem("axia_apply_token", d.apply_token);
-          return fetch("/api/auth/kyc", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              apply_token: d.apply_token,
-              ssn: ssn,
-              id_front: pics[0],
-              id_back: pics[1]
-            })
-          });
+          return d;
         }).then(function () {
           location.href = "app-pending.html";
         });
