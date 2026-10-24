@@ -6,6 +6,7 @@ import { DurableObject } from "cloudflare:workers";
 import createApp from "../app-core.js";
 import db from "../db/store.js";
 import seed from "../data/sandbox-store.json";
+import * as ops from "./ops.js";
 
 export class AxiaCore extends DurableObject {
   constructor(ctx, env) {
@@ -25,6 +26,21 @@ export class AxiaCore extends DurableObject {
       clients: () => ctx.getWebSockets().map((ws) => this.shim(ws)),
     });
     ctx.blockConcurrencyWhile(async () => { await db.init(); });
+  }
+
+  async reloadDb() { this.cache.clear(); await db.init(); }
+
+  async ops(u, request) {
+    const a = u.pathname.slice(7);
+    const j = (x, st = 200) => Response.json(x, { status: st });
+    if (a === "export") { const s = ops.snapshot(this); return j(Object.assign(s, { counts: ops.counts(s) })); }
+    if (a === "counts") return j(ops.counts(ops.snapshot(this)));
+    if (a === "import" && request.method === "POST") return j(await ops.mergeImport(this, await request.json()));
+    if (a === "delete-customers" && request.method === "POST") return j(await ops.deleteCustomers(this, (await request.json()).emails || []));
+    if (a === "backup" && request.method === "POST") return j(ops.backup(this));
+    if (a === "backups") return j(ops.listBackups(this));
+    if (a.startsWith("backup/")) { const r = this.sql.exec("SELECT v FROM kv WHERE k = ?", "backup:" + a.slice(7)).toArray()[0]; return r ? new Response(r.v, { headers: { "content-type": "application/json" } }) : j({ error: "not found" }, 404); }
+    return j({ error: "unknown" }, 404);
   }
 
   readStore() {
@@ -82,6 +98,7 @@ export class AxiaCore extends DurableObject {
 
   async fetch(request) {
     const u = new URL(request.url);
+    if (u.pathname.startsWith("/__ops/")) return this.ops(u, request);
     if (u.pathname === "/chat") {
       if (request.headers.get("Upgrade") !== "websocket") return new Response("Expected websocket", { status: 426 });
       const pair = new WebSocketPair();
@@ -119,10 +136,19 @@ export class AxiaCore extends DurableObject {
 export default {
   async fetch(request, env) {
     const p = new URL(request.url).pathname;
+    if (p.startsWith("/__ops/")) {
+      const k = request.headers.get("x-ops-key") || "";
+      if (!env.OPS_KEY || k.length < 32 || k !== env.OPS_KEY) return new Response("Not found", { status: 404 });
+      return env.AXIA.get(env.AXIA.idFromName("main")).fetch(request);
+    }
     if (p === "/chat" || p.startsWith("/api/") || ["/healthz", "/login", "/signin", "/register", "/signup", "/admin-login", "/admin-login.html", "/app-id.html", "/app-verify.html"].includes(p)) {
       return env.AXIA.get(env.AXIA.idFromName("main")).fetch(request);
     }
     if (p === "/") return env.ASSETS.fetch(new Request(new URL("/index.html", request.url), request));
     return env.ASSETS.fetch(request);
+  },
+  async scheduled(event, env, ctx) {
+    const r = await env.AXIA.get(env.AXIA.idFromName("main")).fetch(new Request("https://internal/__ops/backup", { method: "POST" }));
+    console.log("daily backup", r.status, await r.text());
   },
 };
