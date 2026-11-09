@@ -26,10 +26,10 @@ function json(res, code, obj) {
   res.writeHead(code, { "Content-Type": "application/json" });
   res.end(JSON.stringify(obj));
 }
-function readBody(req) {
+function readBody(req, max) {
   return new Promise(function (resolve) {
     var raw = "";
-    req.on("data", function (c) { raw += c; if (raw.length > 8e6) req.destroy(); });
+    req.on("data", function (c) { raw += c; if (raw.length > (max || 8e6)) req.destroy(); });
     req.on("end", function () {
       try { resolve(JSON.parse(raw || "{}")); } catch (e) { resolve({}); }
     });
@@ -455,6 +455,21 @@ const server = http.createServer(async function (req, res) {
           pending_withdrawals: db.all("withdrawal_requests", function (r) { return r.status === "pending"; }).length
         });
       }
+      if (req.method === "GET" && url === "/api/admin/backup") {
+        var snap = db.snapshot();
+        snap.counts = db.counts(snap);
+        db.audit("admin", adminUser.id, "download_backup", "backup", 0, JSON.stringify(snap.counts));
+        return json(res, 200, snap);
+      }
+      if (req.method === "POST" && url === "/api/admin/restore") {
+        var payload = await readBody(req, 100e6);
+        var st = payload && (payload.store || payload);
+        if (!st || !Array.isArray(st.customers)) return json(res, 400, { error: "Not an Axia backup file" });
+        db.writeBackupFile();
+        var result = db.mergeImport(payload);
+        db.audit("admin", adminUser.id, "restore_backup", "backup", 0, JSON.stringify(result.added));
+        return json(res, 200, { ok: true, added: result.added });
+      }
       if (req.method === "GET" && url === "/api/admin/customers") {
         return json(res, 200, { customers: db.all("customers").map(publicCustomer).reverse() });
       }
@@ -763,6 +778,8 @@ wss.on("connection", function (ws) {
 });
 
 db.init().then(function () {
+  try { db.writeBackupFile(); } catch (e) { console.error("backup failed", e.message); }
+  setInterval(function () { try { db.writeBackupFile(); } catch (e) { console.error("backup failed", e.message); } }, 24 * 3600 * 1000).unref();
   server.listen(PORT, function () {
     console.log("Axia server running on http://localhost:" + PORT);
   });

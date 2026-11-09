@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Axia Bank – Backup & Recovery</title>
+<style>
+  body{font-family:Georgia,serif;background:#050806;color:#f4f4f4;margin:0;padding:28px 18px}
+  .wrap{max-width:760px;margin:0 auto}
+  h1{font-size:26px;margin-bottom:6px}
+  p,li{color:#b9c4bd;font-size:14px;line-height:1.5}
+  .card{background:#111a15;border:1px solid #1f3329;border-radius:12px;padding:18px;margin:16px 0}
+  .btn{background:#0b3d2a;color:#fff;border:0;padding:11px 16px;border-radius:8px;cursor:pointer;font:inherit;margin:4px 6px 4px 0}
+  .btn:hover{background:#0f5239}
+  input[type=file]{margin:10px 0;color:#f4f4f4}
+  #msg{margin-top:12px;font-size:14px;white-space:pre-wrap}
+  .ok{color:#8fd4a8}.err{color:#ff8a80}
+  a{color:#8fd4a8}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Backup &amp; Recovery</h1>
+  <p>Admin only. <a href="axiabank/admin-app.html">Back to admin panel</a></p>
+
+  <div class="card">
+    <h3>1. Download a backup</h3>
+    <p>Includes every customer, account, transaction, deposit, withdrawal, card and notification. It also contains hashed passwords and PINs, so keep the file private.</p>
+    <button class="btn" id="dlHtml">Download backup (HTML)</button>
+    <button class="btn" id="dlJson">Download backup (JSON)</button>
+    <p>The HTML file opens in any browser as a readable customer list, and it is also a full backup you can restore from.</p>
+  </div>
+
+  <div class="card">
+    <h3>2. Restore from a backup</h3>
+    <p>Pick a backup file (HTML or JSON, or an export from the old Cloudflare site). Existing customers are never overwritten or duplicated: people are matched by email, accounts by account number. Only missing records are added.</p>
+    <input type="file" id="file" accept=".html,.json,application/json,text/html">
+    <br><button class="btn" id="restore">Restore</button>
+  </div>
+  <div id="msg"></div>
+  <p>The server also saves its own copy daily on the volume under <code>/data/backups</code> (last 14 days).</p>
+</div>
+<script>
+var token = localStorage.getItem("axia_admin_token") || "";
+var msg = document.getElementById("msg");
+function say(t, ok) { msg.className = ok ? "ok" : "err"; msg.textContent = t; }
+function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+function api(path, method, body) {
+  return fetch(path, { method: method || "GET", headers: { "Content-Type": "application/json", Authorization: "Bearer " + token }, body: body }).then(function (r) {
+    return r.json().then(function (d) { if (!r.ok || d.error) throw new Error(d.error || ("Error " + r.status)); return d; });
+  });
+}
+function save(name, type, text) {
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([text], { type: type }));
+  a.download = name; document.body.appendChild(a); a.click(); a.remove();
+}
+function stamp() { return new Date().toISOString().slice(0, 10); }
+function fetchBackup() {
+  if (!token) { throw new Error("Sign in on the admin page first."); }
+  return api("/api/admin/backup");
+}
+document.getElementById("dlJson").onclick = function () {
+  say("Preparing…", true);
+  Promise.resolve().then(fetchBackup).then(function (d) {
+    save("axia-backup-" + stamp() + ".json", "application/json", JSON.stringify(d));
+    say("Downloaded. " + JSON.stringify(d.counts), true);
+  }).catch(function (e) { say(e.message); });
+};
+document.getElementById("dlHtml").onclick = function () {
+  say("Preparing…", true);
+  Promise.resolve().then(fetchBackup).then(function (d) {
+    var s = d.store, accts = {};
+    (s.accounts || []).forEach(function (a) { (accts[a.customer_id] = accts[a.customer_id] || []).push(a); });
+    var rows = (s.customers || []).map(function (c) {
+      var list = (accts[c.id] || []).map(function (a) { return esc(a.product) + " " + esc(a.account_number) + " ($" + (Number(a.available_cents || 0) / 100).toFixed(2) + ")"; }).join("<br>");
+      return "<tr><td>" + esc(c.first_name) + " " + esc(c.last_name) + "</td><td>" + esc(c.username) + "</td><td>" + esc(c.email) + "</td><td>" + esc(c.phone) + "</td><td>" + esc(c.status) + "</td><td>" + list + "</td></tr>";
+    }).join("");
+    var data = JSON.stringify(d).replace(/</g, "\\u003c");
+    var html = "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><title>Axia Bank backup " + stamp() + "</title>" +
+      "<style>body{font-family:Georgia,serif;margin:24px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #bbb;padding:6px 8px;font-size:13px;text-align:left;vertical-align:top}th{background:#0b3d2a;color:#fff}</style></head><body>" +
+      "<h1>Axia Bank backup</h1><p>Created " + esc(d.exported_at) + ". " + (s.customers || []).length + " customers, " + (s.accounts || []).length + " accounts, " + (s.transactions || []).length + " transactions. Private: contains password and PIN hashes. To recover, upload this file at /admin-backup.html.</p>" +
+      "<table><tr><th>Name</th><th>Username</th><th>Email</th><th>Phone</th><th>Status</th><th>Accounts</th></tr>" + rows + "</table>" +
+      "<script type=\"application/json\" id=\"axia-data\">" + data + "<\/script></body></html>";
+    save("axia-backup-" + stamp() + ".html", "text/html", html);
+    say("Downloaded " + (s.customers || []).length + " customers.", true);
+  }).catch(function (e) { say(e.message); });
+};
+document.getElementById("restore").onclick = function () {
+  var f = document.getElementById("file").files[0];
+  if (!f) return say("Choose a backup file first.");
+  if (!token) return say("Sign in on the admin page first.");
+  f.text().then(function (txt) {
+    var json = txt;
+    if (/^\s*</.test(txt)) {
+      var m = txt.match(/<script type="application\/json" id="axia-data">([\s\S]*?)<\/script>/);
+      if (!m) throw new Error("No backup data found in this HTML file.");
+      json = m[1];
+    }
+    JSON.parse(json);
+    say("Restoring…", true);
+    return api("/api/admin/restore", "POST", json);
+  }).then(function (r) {
+    var a = r.added || {}, keys = Object.keys(a);
+    say(keys.length ? "Restored. Added: " + keys.map(function (k) { return a[k] + " " + k; }).join(", ") : "Nothing to add: everything in the file already exists.", true);
+  }).catch(function (e) { say(e.message); });
+};
+</script>
+</body>
+</html>

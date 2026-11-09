@@ -165,7 +165,74 @@ function sessionUser(token) {
   return Object.assign({ type: "customer", step: row.step || "full" }, customer);
 }
 
+// ---- Backup / restore ----
+var STRIP = ["id_front", "id_back", "ssn_hash", "ssn_last4", "ssn"];
+var SKIP = { sessions: 1, roles: 1, admins: 1, seq: 1 };
+function clone(x) { return JSON.parse(JSON.stringify(x)); }
+function maxId(rows) { return rows.reduce(function (m, r) { return Math.max(m, Number(r.id) || 0); }, 0); }
+function snapshot() {
+  var out = {};
+  Object.keys(store).forEach(function (k) { if (!SKIP[k] && Array.isArray(store[k])) out[k] = clone(store[k]); });
+  return { format: "axia-backup", version: 1, exported_at: now(), store: out };
+}
+function counts(snap) {
+  var c = {};
+  Object.keys(snap.store || {}).forEach(function (k) { if (Array.isArray(snap.store[k])) c[k] = snap.store[k].length; });
+  return c;
+}
+// Idempotent merge: customers matched by email, accounts by account number, other rows by content.
+// Accepts this server's backup and the Cloudflare Worker's /__ops/export file.
+function mergeImport(payload) {
+  var old = clone((payload && payload.store) || payload || {});
+  var added = {};
+  function add(tbl, row) {
+    store[tbl] = store[tbl] || [];
+    store.seq = store.seq || {};
+    row.id = Math.max(maxId(store[tbl]), store.seq[tbl] || 0) + 1;
+    store.seq[tbl] = row.id; store[tbl].push(row); added[tbl] = (added[tbl] || 0) + 1;
+  }
+  var custMap = {}, acctMap = {};
+  (old.customers || []).forEach(function (c) {
+    STRIP.forEach(function (k) { delete c[k]; });
+    var hit = store.customers.find(function (x) { return String(x.email).toLowerCase() === String(c.email).toLowerCase(); });
+    if (hit) { custMap[c.id] = hit.id; return; }
+    var oid = c.id; add("customers", c); custMap[oid] = c.id;
+  });
+  (old.accounts || []).forEach(function (a) {
+    var hit = store.accounts.find(function (x) { return x.account_number === a.account_number; });
+    if (hit) { acctMap[a.id] = hit.id; return; }
+    if (custMap[a.customer_id] == null) return;
+    var oid = a.id; a.customer_id = custMap[a.customer_id]; add("accounts", a); acctMap[oid] = a.id;
+  });
+  function keyOf(r) { return JSON.stringify([r.customer_id, r.account_id, r.created_at, r.amount_cents, r.title, r.action, r.reference, r.type]); }
+  Object.keys(old).forEach(function (tbl) {
+    if (SKIP[tbl] || tbl === "customers" || tbl === "accounts" || !Array.isArray(old[tbl])) return;
+    store[tbl] = store[tbl] || [];
+    var seen = {};
+    store[tbl].forEach(function (x) { seen[keyOf(x)] = 1; });
+    old[tbl].forEach(function (r) {
+      if (r.customer_id != null) { if (custMap[r.customer_id] == null) return; r.customer_id = custMap[r.customer_id]; }
+      if (r.account_id != null) { if (acctMap[r.account_id] == null) return; r.account_id = acctMap[r.account_id]; }
+      var k = keyOf(r);
+      if (seen[k]) return;
+      seen[k] = 1; add(tbl, r);
+    });
+  });
+  persist();
+  return { added: added };
+}
+function writeBackupFile() {
+  var dir = path.join(DATA_DIR, "backups");
+  fs.mkdirSync(dir, { recursive: true });
+  var name = "axia-backup-" + now().slice(0, 10) + ".json";
+  fs.writeFileSync(path.join(dir, name), JSON.stringify(snapshot()));
+  fs.readdirSync(dir).filter(function (f) { return /^axia-backup-.*\.json$/.test(f); }).sort().slice(0, -14)
+    .forEach(function (f) { try { fs.unlinkSync(path.join(dir, f)); } catch (e) {} });
+  return name;
+}
+
 module.exports = {
+  snapshot: snapshot, counts: counts, mergeImport: mergeImport, writeBackupFile: writeBackupFile,
   init: init, now: now, hashPassword: hashPassword, checkPassword: checkPassword,
   accountNumber: accountNumber, audit: audit, notify: notify,
   createSession: createSession, sessionUser: sessionUser,
