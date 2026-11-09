@@ -14,7 +14,7 @@
   <div class="wrap">
     <div class="form-col">
       <h1>Create your complete Axia profile</h1>
-      <p class="sub">Step 1 of 2. Next you will upload ID and SSN.</p>
+      <p class="sub">Create your account. An admin will review it before you can sign in.</p>
       <div class="sec">Account credentials</div>
       <label>Email</label><input id="email" type="email">
       <div class="row">
@@ -54,7 +54,7 @@
       <p class="err" id="err"></p>
       <button class="btn" type="button" id="go">Continue to ID upload</button>
     </div>
-    <div class="art"><div class="art-card"><b>AXIA</b><p>Create account → ID & SSN → Admin review</p></div></div>
+    <div class="art"><div class="art-card"><b>AXIA</b><p>Create account → Admin review</p></div></div>
   </div>
   <script>
     var pic = "";
@@ -76,8 +76,7 @@
         })
       }).then(function (r) { return r.json(); }).then(function (d) {
         if (d.error) { document.getElementById("err").textContent = d.error; return; }
-        localStorage.setItem("axia_apply_token", d.apply_token);
-        location.href = "app-verify.html";
+        location.href = "app-pending.html";
       }).catch(function () { document.getElementById("err").textContent = "Start the server first"; });
     };
   </script>

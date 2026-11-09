@@ -5,7 +5,7 @@ const path = require("path");
 const { WebSocketServer } = require("ws");
 const db = require("./db/store");
 
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
 const root = __dirname;
 const loginHits = {};
 function tooManyLogins(req) {
@@ -26,10 +26,10 @@ function json(res, code, obj) {
   res.writeHead(code, { "Content-Type": "application/json" });
   res.end(JSON.stringify(obj));
 }
-function readBody(req) {
+function readBody(req, max) {
   return new Promise(function (resolve) {
     var raw = "";
-    req.on("data", function (c) { raw += c; if (raw.length > 8e6) req.destroy(); });
+    req.on("data", function (c) { raw += c; if (raw.length > (max || 8e6)) req.destroy(); });
     req.on("end", function () {
       try { resolve(JSON.parse(raw || "{}")); } catch (e) { resolve({}); }
     });
@@ -67,7 +67,6 @@ function publicCustomer(c) {
     account_type: c.account_type, employment: c.employment,
     status: c.status, profile_pic: c.profile_pic || "",
     dob: c.dob || "",
-    ssn_last4: c.ssn_last4 || "", kyc_complete: c.kyc_complete || 0,
     created_at: c.created_at
   };
 }
@@ -135,7 +134,7 @@ const server = http.createServer(async function (req, res) {
   var url = req.url.split("?")[0];
   try {
     if (req.method === "POST" && url === "/api/auth/register") {
-      var b = await readBody(req);
+      var b = await readBody(req, 3e7);
       if (!b.email || !b.username || !b.password || !b.first_name || !b.last_name || !b.pin) {
         return json(res, 400, { error: "Missing required fields" });
       }
@@ -149,7 +148,8 @@ const server = http.createServer(async function (req, res) {
         return json(res, 409, { error: "Username taken" });
       }
       var pic = String(b.profile_pic || "");
-      if (pic && pic.length > 900000) return json(res, 400, { error: "Photo is too large" });
+      // Never lose an application over a photo: drop an oversized/invalid photo and still register.
+      if (pic && (pic.length > 900000 || pic.indexOf("data:image/") !== 0)) pic = "";
       var customer = db.insert("customers", {
         username: String(b.username).toLowerCase().slice(0, 40),
         email: String(b.email).toLowerCase().slice(0, 80),
@@ -166,36 +166,16 @@ const server = http.createServer(async function (req, res) {
         postal_code: String(b.postal_code || b.postalCode || "").slice(0, 20),
         reason: String(b.reason || "").slice(0, 40),
         profile_pic: pic,
-        status: "draft",
+        status: "pending",
         kyc_complete: 0,
-        ssn_last4: "",
         created_at: db.now()
       });
-      var apply = db.createSession("customer", customer.id, { step: "kyc" });
-      db.audit("customer", customer.id, "register", "customers", customer.id, "draft");
-      return json(res, 201, { ok: true, step: "kyc", apply_token: apply.token });
+      db.audit("customer", customer.id, "register", "customers", customer.id, "pending approval");
+      return json(res, 201, { ok: true, step: "pending", status: "pending" });
     }
 
     if (req.method === "POST" && url === "/api/auth/kyc") {
-      var kb = await readBody(req);
-      var kycUser = db.sessionUser(kb.apply_token || "");
-      if (!kycUser || kycUser.type !== "customer") return json(res, 401, { error: "Start with Create account first" });
-      var ssn = String(kb.ssn || "").replace(/\D/g, "");
-      if (ssn.length !== 9) return json(res, 400, { error: "Enter a 9-digit SSN" });
-      if (!kb.id_front) return json(res, 400, { error: "Upload ID front" });
-      if (!kb.id_back) return json(res, 400, { error: "Upload ID back" });
-      if (String(kb.id_front).length > 1500000 || String(kb.id_back || "").length > 1500000) {
-        return json(res, 400, { error: "ID image is too large" });
-      }
-      db.update("customers", kycUser.id, {
-        ssn_hash: db.hashPassword(ssn),
-        ssn_last4: ssn.slice(-4),
-        id_front: String(kb.id_front),
-        id_back: String(kb.id_back || ""),
-        kyc_complete: 1,
-        status: "pending"
-      });
-      db.audit("customer", kycUser.id, "kyc", "customers", kycUser.id, "pending approval");
+      // ID/SSN collection removed. Nothing is stored; kept only so old clients don't break.
       return json(res, 200, { ok: true, status: "pending" });
     }
 
@@ -476,6 +456,21 @@ const server = http.createServer(async function (req, res) {
           pending_withdrawals: db.all("withdrawal_requests", function (r) { return r.status === "pending"; }).length
         });
       }
+      if (req.method === "GET" && url === "/api/admin/backup") {
+        var snap = db.snapshot();
+        snap.counts = db.counts(snap);
+        db.audit("admin", adminUser.id, "download_backup", "backup", 0, JSON.stringify(snap.counts));
+        return json(res, 200, snap);
+      }
+      if (req.method === "POST" && url === "/api/admin/restore") {
+        var payload = await readBody(req, 100e6);
+        var st = payload && (payload.store || payload);
+        if (!st || !Array.isArray(st.customers)) return json(res, 400, { error: "Not an Axia backup file" });
+        db.writeBackupFile();
+        var result = db.mergeImport(payload);
+        db.audit("admin", adminUser.id, "restore_backup", "backup", 0, JSON.stringify(result.added));
+        return json(res, 200, { ok: true, added: result.added });
+      }
       if (req.method === "GET" && url === "/api/admin/customers") {
         return json(res, 200, { customers: db.all("customers").map(publicCustomer).reverse() });
       }
@@ -600,7 +595,7 @@ const server = http.createServer(async function (req, res) {
           customer: publicCustomer(xrow),
           accounts: db.all("accounts", function (a) { return a.customer_id === xid; }).map(publicAccount),
           transactions: db.all("transactions", function (t) { return t.customer_id === xid; }).reverse(),
-          kyc: { has_id: !!(xrow.id_front || xrow.id_back) }
+          kyc: { has_id: false }
         });
       }
       if (req.method === "GET" && url === "/api/admin/deposits") {
@@ -678,6 +673,11 @@ const server = http.createServer(async function (req, res) {
     if (url.indexOf("/api/") === 0) return json(res, 404, { error: "Unknown API route" });
 
     // Short-path redirects for common entry URLs
+    if (url === "/app-id.html" || url === "/app-verify.html") {
+      res.writeHead(302, { Location: "/app-pending.html" });
+      return res.end();
+    }
+    if (url === "/healthz") return json(res, 200, { ok: true });
     if (url === "/login" || url === "/signin") {
       res.writeHead(302, { Location: "/app-login.html" });
       return res.end();
@@ -779,6 +779,8 @@ wss.on("connection", function (ws) {
 });
 
 db.init().then(function () {
+  try { db.writeBackupFile(); } catch (e) { console.error("backup failed", e.message); }
+  setInterval(function () { try { db.writeBackupFile(); } catch (e) { console.error("backup failed", e.message); } }, 24 * 3600 * 1000).unref();
   server.listen(PORT, function () {
     console.log("Axia server running on http://localhost:" + PORT);
   });
