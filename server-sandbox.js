@@ -134,7 +134,7 @@ const server = http.createServer(async function (req, res) {
   var url = req.url.split("?")[0];
   try {
     if (req.method === "POST" && url === "/api/auth/register") {
-      var b = await readBody(req);
+      var b = await readBody(req, 3e7);
       if (!b.email || !b.username || !b.password || !b.first_name || !b.last_name || !b.pin) {
         return json(res, 400, { error: "Missing required fields" });
       }
@@ -148,7 +148,8 @@ const server = http.createServer(async function (req, res) {
         return json(res, 409, { error: "Username taken" });
       }
       var pic = String(b.profile_pic || "");
-      if (pic && pic.length > 900000) return json(res, 400, { error: "Photo is too large" });
+      // Never lose an application over a photo: drop an oversized/invalid photo and still register.
+      if (pic && (pic.length > 900000 || pic.indexOf("data:image/") !== 0)) pic = "";
       var customer = db.insert("customers", {
         username: String(b.username).toLowerCase().slice(0, 40),
         email: String(b.email).toLowerCase().slice(0, 80),
