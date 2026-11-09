@@ -102,7 +102,19 @@
     function readFile(file) {
       return new Promise(function (resolve, reject) {
         var r = new FileReader();
-        r.onload = function (e) { resolve(e.target.result); };
+        r.onload = function (e) {
+          // Downscale to keep the upload small (server rejects very large photos)
+          var img = new Image();
+          img.onload = function () {
+            var m = 400, k = Math.min(1, m / Math.max(img.width, img.height));
+            var c = document.createElement("canvas");
+            c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+            c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+            resolve(c.toDataURL("image/jpeg", 0.8));
+          };
+          img.onerror = function () { resolve(e.target.result); };
+          img.src = e.target.result;
+        };
         r.onerror = reject;
         r.readAsDataURL(file);
       });
@@ -207,8 +219,8 @@
         }).then(function () {
           location.href = "app-pending.html";
         });
-      }).catch(function () {
-        location.href = "app-pending.html";
+      }).catch(function (err) {
+        show("Registration failed: " + ((err && err.message) || "could not reach the server") + ". Please try again.");
       });
     };
   </script>
